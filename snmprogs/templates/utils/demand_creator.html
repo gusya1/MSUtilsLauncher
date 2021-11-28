@@ -1,0 +1,9 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>Генератор отгрузок</h1>
+<form  action="{% url 'demand_creator/run' %}">
+<p>Выберете дату: <input type="date" name="date"/></p>
+<input type="submit">
+</form>
+{% endblock %}

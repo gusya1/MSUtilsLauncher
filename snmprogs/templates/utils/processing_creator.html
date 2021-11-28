@@ -1,0 +1,9 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>Генератор тех.операций</h1>
+<form  action="{% url 'processing_creator/run' %}">
+<p>Выберете дату: <input type="date" name="date"/></p>
+<input type="submit">
+</form>
+{% endblock %}
