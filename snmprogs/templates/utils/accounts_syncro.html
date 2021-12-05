@@ -1,9 +1,0 @@
-{% extends "base_generic.html" %}
-
-{% block content %}
-<h1>Синхронизация расчётных счетов</h1>
-<form  action="{% url 'accounts_syncro/run' %}">
-<p>Выберете дату: <input type="date" name="date"/></p>
-<input type="submit">
-</form>
-{% endblock %}

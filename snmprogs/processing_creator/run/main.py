@@ -6,14 +6,8 @@ from MSApi import CompanySettings
 from .settings import MOY_SKLAD
 
 
-def generate_processing(date_string: str):
+def generate_processing(date):
     try:
-        if not date_string:
-            raise RuntimeError("Please, choose the date!")
-        try:
-            date = datetime.datetime.strptime(date_string, "%Y-%m-%d")
-        except ValueError as e:
-            raise RuntimeError("Incorrect date!")
 
         MSApi.set_access_token(MOY_SKLAD.TOKEN)
 
@@ -24,16 +18,17 @@ def generate_processing(date_string: str):
             processing_plan_blacklist = list(entity_elem.get_name() for entity_elem in entity.gen_elements())
             break
         else:
-            raise RuntimeError("Entity {} not found!".format(MOY_SKLAD.PROCESSING_PLAN_BLACKLIST_ENTITY))
+            raise RuntimeError("Справочник \'{}\' не найден!".format(MOY_SKLAD.PROCESSING_PLAN_BLACKLIST_ENTITY))
 
         for s in Store.gen_list(filters=Filter.eq('name', MOY_SKLAD.STORE_NAME)):
             store = s
             break
         else:
-            raise RuntimeError("Store {} not found!".format(MOY_SKLAD.STORE_NAME))
+            raise RuntimeError("Склад \'{}\' не найден!".format(MOY_SKLAD.STORE_NAME))
 
         ##
         error_list = []
+        change_list = []
 
         date_filter = DateTimeFilter.gte('deliveryPlannedMoment', date)
         date_filter += DateTimeFilter.lt('deliveryPlannedMoment', date + datetime.timedelta(days=1))
@@ -59,18 +54,15 @@ def generate_processing(date_string: str):
                     material["quantity"] *= po_quantity
 
                 Processing.create(template)
+                change_list.append("Создана техоперация для заказа на производство\'{}\'")
+
             except MSApiException as e:
-                error_list.append("Processing for {} processing order create failed: {}"
+                error_list.append("Ошибка создания техоперации для заказа на производство\'{}\': {}"
                                   .format(processing_order.get_name(), str(e)))
 
-        result_text = "<h2>Processings created: {}/{}</h2>".format(total_count - len(error_list), total_count)
-        if len(error_list) != 0:
-            result_text += "<p>Errors:</p>"
-            for i, error in enumerate(error_list):
-                result_text += f"<li><b>[{i}]</b> {error}</li>"
-        return result_text, 200
+        return True, (change_list, error_list)
 
     except MSApiException as e:
-        return "MSApi error: {}".format(str(e)), 400
+        return False, str(e)
     except RuntimeError as e:
-        return "Runtime error: {}".format(str(e)), 400
+        return False, str(e)

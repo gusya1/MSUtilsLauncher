@@ -1,0 +1,8 @@
+{% block content %}
+<h2>Утилиты</h2>
+<ul class="menu">
+{% for snm_app in snm_apps %}
+<li><a href="{{ snm_app.label }}">{{ snm_app.verbose_name }}</a></li>
+{% endfor %}
+</ul>
+{% endblock %}

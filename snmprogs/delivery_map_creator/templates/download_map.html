@@ -1,0 +1,23 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h2>{{ title }}</h2>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-6">
+        <h3>Готово</h3>
+        <p>Файл доступен 1 минуту</p>
+        <a href="{% url 'delivery_map_creator/download' %}?file_name={{ download_file }}" >Скачать файл</a>
+      </div>
+      <div class="col-sm-6">
+        <h3>Ошибки</h3>
+        <ul class="menu">
+        {% for error in errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

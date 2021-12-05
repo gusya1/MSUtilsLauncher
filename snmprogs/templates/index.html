@@ -1,10 +1,5 @@
 {% extends "base_generic.html" %}
 
 {% block content %}
-<h1>S.O.B.A.K.A.N.A.M.Y.A.S.E</h1>
-<p>Welcome to SNM Script launcher</p>
-<h1>Utils menu</h1>
-<li><a href="{% url 'demand_creator' %}">Генератор отгрузок</a></li>
-<li><a href="{% url 'processing_creator' %}">Генератор тех.операций</a></li>
-<li><a href="{% url 'accounts_syncro' %}">Cинхронизация расчётных счетов</a></li>
+{% include index_content %}
 {% endblock %}

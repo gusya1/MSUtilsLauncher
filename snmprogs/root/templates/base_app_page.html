@@ -1,0 +1,9 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h2>{{ title }}</h2>
+<form  action="{{ url_target }}">
+  {{ form.as_p }}
+  <input type="submit">
+</form>
+{% endblock %}

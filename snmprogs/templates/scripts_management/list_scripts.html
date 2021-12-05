@@ -1,0 +1,33 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h2>Список скриптов</h2>
+{% if scripts.count > 0 %}
+<table class="table">
+        <thead>
+            <th>Id</th>
+            <th>Имя</th>
+            <th>Форма</th>
+            <th>Функция</th>
+            <th></th>
+        </thead>
+        {% for script in scripts %}
+        <tr>
+            <td>{{ script.id }}</td>
+            <td>{{ script.name }}</td>
+            <td>{{ script.form_obj_name }}</td>
+            <td>{{ script.func_obj_name }}</td>
+            <td><a href="edit/{{script.id}}">Изменить</a> | <a href="delete/{{script.id}}">Удалить</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+{% else %}
+    <p>Нету ничего</p>
+{% endif %}
+<h2>Создать новый скрипт</h2>
+<form method="POST" action="create">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit">
+</form>
+{% endblock %}
