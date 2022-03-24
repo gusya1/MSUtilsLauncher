@@ -4,7 +4,7 @@ from django.shortcuts import render
 
 from .run.main import accounts_syncro
 from root import forms
-from .apps import AccountsSyncroConfig as App
+from .apps import AccountsSyncConfig as App
 
 
 @permission_required('root.view_post')

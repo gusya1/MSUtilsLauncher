@@ -1,8 +1,8 @@
 from django.apps import AppConfig
+from root.apps import SnmAppBase
 
 
-class AccountsSyncroConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
+class AccountsSyncConfig(AppConfig, SnmAppBase):
     name = 'accounts_syncro'
     verbose_name = "Синхронизация расчётных счетов"
-    is_snm_app = True
+    display_in_menu = True

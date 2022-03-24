@@ -1,8 +1,8 @@
 from django.apps import AppConfig
+from root.apps import SnmAppBase
 
 
-class DemandCreatorConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
+class DemandCreatorConfig(AppConfig, SnmAppBase):
     name = 'demand_creator'
     verbose_name = "Генератор отгрузок"
-    is_snm_app = True
+    display_in_menu = True

@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 
 from . import views
+from .apps import SnmAppBase
 
 urlpatterns = [
     path('', views.index, name='root'),
@@ -34,9 +35,7 @@ urlpatterns = [
 
 def generate_snm_apps_paths():
     for app in apps.get_app_configs():
-        if not hasattr(app, "is_snm_app"):
-            continue
-        if not app.is_snm_app:
+        if not issubclass(type(app), SnmAppBase):
             continue
         yield path('{}/'.format(app.label), include('{}.urls'.format(app.name)))
 

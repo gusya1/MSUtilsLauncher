@@ -53,9 +53,7 @@ def accounts_syncro(date):
                         'meta': customer_order.get_meta().get_json(),
                         'organizationAccount': {'meta': account_meta.get_json()}
                     })
-                change_list.append("В заказе %s счёт изменён на %s"
-                                   % customer_order.get_name()
-                                   % account_meta.get_name())
+                change_list.append("В заказе {} счёт изменён на {}".format(customer_order.get_name(), account_name))
 
         if updatable_customerorder_list:
             response = MSApi.auch_post("entity/customerorder", json=updatable_customerorder_list)

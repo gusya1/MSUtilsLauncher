@@ -1,8 +1,9 @@
 from django.apps import AppConfig
+from root.apps import SnmAppBase
 
 
-class ProcessingCreatorConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
+class ProcessingCreatorConfig(AppConfig, SnmAppBase):
     name = 'processing_creator'
     verbose_name = "Генератор тех.операций"
-    is_snm_app = True
+    display_in_menu = True
+

@@ -1,0 +1,14 @@
+
+.settings_table th {
+    vertical-align: top;
+}
+
+.settings_table td, .settings_table thead th {
+    padding-bottom: 5px;
+    padding-left: 5px;
+}
+
+.settings_table .helptext {
+    font-style: italic;
+    color: gray;
+}

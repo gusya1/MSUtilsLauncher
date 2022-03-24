@@ -7,8 +7,11 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  {% block header_script %}
+  {% endblock %}
 
   {% load static %}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 
 <body>
@@ -39,7 +42,12 @@
       <div class="col-sm-2">
       </div>
     </div>
-
+    <div class="row">
+      <div class="col-sm-2"></div>
+      <div class="col-sm-8 "><div style="height:200px" ></div></div>
+      <div class="col-sm-2">
+      </div>
+    </div>
   </div>
 </body>
 </html>

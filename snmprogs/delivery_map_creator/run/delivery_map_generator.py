@@ -1,11 +1,14 @@
 import datetime
 import json
 
-import googlemaps
+# import googlemaps
 from MSApi import MSApi, MSApiException, DateTimeFilter, Expand, CustomerOrder
 from MSApi import CompanySettings
 from django.core.files.base import ContentFile
-from googlemaps.exceptions import ApiError, HTTPError, Timeout, TransportError
+# from googlemaps.exceptions import ApiError, HTTPError, Timeout, TransportError
+
+from decimal import Decimal
+from yandex_geocoder import Client, NothingFound, YandexGeocoderException
 
 from .settings import MOY_SKLAD, DELIVERY_MAP_GENERATOR
 from ..AutocleanStorage import autoclean_default_storage
@@ -43,7 +46,8 @@ def run(date):
         error_list = []
 
         try:
-            gmaps = googlemaps.Client(key=DELIVERY_MAP_GENERATOR.GOOGLEMAPS_KEY)
+            client = Client(DELIVERY_MAP_GENERATOR.YANDEXMAPS_KEY)
+            gmaps = googlemaps.Client(key=DELIVERY_MAP_GENERATOR.YANDEXMAPS_KEY)
         except ValueError as e:
             raise RuntimeError(str(e))
 
@@ -68,10 +72,12 @@ def run(date):
 
                 color = DELIVERY_MAP_GENERATOR.DEFAULT_COLOR
 
-                delivery_time = customer_order.get_attribute_by_name('deliveryPlannedMoment')
+                delivery_time = customer_order.get_attribute_by_name('Время доставки')
                 if delivery_time is None:
                     delivery_time = ""
                     color = DELIVERY_MAP_GENERATOR.DELIVERY_TIME_MISSED_COLOR
+                else:
+                    delivery_time = delivery_time.get_value()
 
                 agent = customer_order.get_agent()
                 actual_address = agent.get_actual_address()
@@ -79,33 +85,41 @@ def run(date):
                     error_list.append(f"Контрагент [{agent.get_name()}]: Адрес не заполнен")
                     continue
 
-                geocode_result = gmaps.geocode(actual_address)
-                if len(geocode_result) == 0:
+                try:
+                    coordinates = client.coordinates(actual_address)
+                    # geocode_result = gmaps.geocode(actual_address)
+                    if len(coordinates) == 0:
+                        error_list.append(f"Контрагент [{agent.get_name()}]: Адрес не найден на карте")
+                        continue
+                    # if len(geocode_result) != 1:
+                    #     error_list.append(f"Контрагент [{agent.get_name()}]: Неоднозначный адрес")
+                    #     continue
+
+                    # location = geocode_result[0].get('geometry').get('location')
+                    features_list.append(create_point_feature(
+                        features_iter,
+                        float(coordinates[1]),
+                        float(coordinates[0]),
+                        # location.get('lat'),
+                        # location.get('lng'),
+                        f"{customer_order.get_name()} ({delivery_time})",
+                        actual_address,
+                        color
+                    ))
+                    features_iter += 1
+                except NothingFound as e:
                     error_list.append(f"Контрагент [{agent.get_name()}]: Адрес не найден на карте")
                     continue
-                if len(geocode_result) != 1:
-                    error_list.append(f"Контрагент [{agent.get_name()}]: Неоднозначный адрес")
-                    continue
-
-                location = geocode_result[0].get('geometry').get('location')
-                features_list.append(create_point_feature(
-                    features_iter,
-                    location.get('lat'),
-                    location.get('lng'),
-                    f"{customer_order.get_name()} ({delivery_time})",
-                    actual_address,
-                    color
-                ))
-                features_iter += 1
-
-            except ApiError as e:
-                error_list.append(f"Google Maps API error: {e}")
-            except HTTPError as e:
-                error_list.append(f"HTTP error: {e}")
-            except Timeout as e:
-                error_list.append(f"Timeout error: {e}")
-            except TransportError as e:
-                error_list.append(f"Transport error: {e}")
+            except YandexGeocoderException as e:
+                error_list.append(f"Yandex Maps API error: {e}")
+            # except ApiError as e:
+            #     error_list.append(f"Google Maps API error: {e}")
+            # except HTTPError as e:
+            #     error_list.append(f"HTTP error: {e}")
+            # except Timeout as e:
+            #     error_list.append(f"Timeout error: {e}")
+            # except TransportError as e:
+            #     error_list.append(f"Transport error: {e}")
             except MSApiException as e:
                 error_list.append(f"Moy Sklad error: {e}")
 

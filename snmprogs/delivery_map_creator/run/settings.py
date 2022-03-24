@@ -9,6 +9,7 @@ class MOY_SKLAD:
 class DELIVERY_MAP_GENERATOR:
     PROJECTS_BLACKLIST_ENTITY = ""
     GOOGLEMAPS_KEY = ""
+    YANDEXMAPS_KEY = ""
     DEFAULT_COLOR = ""
     DELIVERY_TIME_MISSED_COLOR = ""
 
@@ -27,6 +28,7 @@ def read_config():
             'delivery_map_generator': {
                 'projects_blacklist_entity': "",
                 'googlemaps_key': "",
+                'yandexmaps_key': "",
                 'default_color': "",
                 'delivery_time_missed_color': "",
             }
@@ -44,6 +46,7 @@ def read_config():
     section = config['delivery_map_generator']
     DELIVERY_MAP_GENERATOR.PROJECTS_BLACKLIST_ENTITY = section['projects_blacklist_entity']
     DELIVERY_MAP_GENERATOR.GOOGLEMAPS_KEY = section['googlemaps_key']
+    DELIVERY_MAP_GENERATOR.YANDEXMAPS_KEY = section['yandexmaps_key']
     DELIVERY_MAP_GENERATOR.DEFAULT_COLOR = section['default_color']
     DELIVERY_MAP_GENERATOR.DELIVERY_TIME_MISSED_COLOR = section['delivery_time_missed_color']
 
