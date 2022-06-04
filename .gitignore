@@ -1,4 +1,5 @@
 .idea
+venv
 snmprogs/snmprogs/settings.py
 snmprogs/db.sqlite3
 snmprogs/debug.log
