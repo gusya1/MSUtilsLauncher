@@ -1,0 +1,3 @@
+MSApi>=0.2.9
+Django>=3.2.13
+pandas>=1.1.5

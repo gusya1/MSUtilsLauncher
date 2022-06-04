@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'demand_creator',
     'accounts_syncro',
     'delivery_map_creator',
+    'delivery_map_loader',
     'woomssync',
 ]
 
@@ -101,10 +102,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
-MEDIA_ROOT = 'media/'
-MEDIA_URL = os.path.join(BASE_DIR, 'media/')
-TEMP_ROOT = 'tmp/'
-TEMP_URL = os.path.join(BASE_DIR, 'tmp/')
+MEDIA_URL = 'media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
+TEMP_URL = 'tmp/'
+TEMP_ROOT = os.path.join(BASE_DIR, 'tmp/')
 
 
 # Default primary key field type

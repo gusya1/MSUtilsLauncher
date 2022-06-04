@@ -1,9 +1,32 @@
 {% extends "base_generic.html" %}
 
 {% block content %}
-<h2>{{ title }}</h2>
-<form  action="{{ url_target }}">
-  {{ form.as_p }}
-  <input type="submit">
-</form>
+<table>
+  <tr>
+    <td>
+      <h2>{{ title }}</h2>
+    </td>
+    <td>
+      {% if settings_url is not None %}
+      <a href={{ settings_url }}>Настройки</a>
+      {% endif %}
+    </td>
+  </tr>
+</table>
+  <div class="col-sm-6">
+    <form enctype={{ enctype|default:"application/x-www-form-urlencoded" }} method={{ method|default:"get" }} action={{ url_target }}>
+    {% csrf_token %}
+    <table>
+      {{ form.as_table }}
+    </table>
+    <input type="submit">
+    </form>
+  </div>
+  <div class="col-sm-6">
+    {% if description is not None %}
+    {% include description %}
+    {% endif %}
+  </div>
+
+
 {% endblock %}
