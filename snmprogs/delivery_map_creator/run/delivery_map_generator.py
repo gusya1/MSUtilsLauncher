@@ -47,7 +47,7 @@ def run(date):
 
         try:
             client = Client(DELIVERY_MAP_GENERATOR.YANDEXMAPS_KEY)
-            gmaps = googlemaps.Client(key=DELIVERY_MAP_GENERATOR.YANDEXMAPS_KEY)
+            #gmaps = googlemaps.Client(key=DELIVERY_MAP_GENERATOR.YANDEXMAPS_KEY)
         except ValueError as e:
             raise RuntimeError(str(e))
 
