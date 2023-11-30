@@ -138,6 +138,6 @@ def run(date):
         return error_list, true_filename
 
     except RuntimeError as e:
-        return f"Error: {e}", ""
+        return [f"Error: {e}"], ""
     except MSApiException as e:
-        return f"Moy Sklad error: {e}", ""
+        return [f"Moy Sklad error: {e}"], ""
