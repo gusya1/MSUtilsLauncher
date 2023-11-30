@@ -1,5 +1,9 @@
 .idea
 venv
+__pycache__
 snmprogs/snmprogs/settings.py
 snmprogs/db.sqlite3
 snmprogs/debug.log
+public_html
+logs
+snmprogs/media/apps/delivery_map_loader/settings/palette.csv
