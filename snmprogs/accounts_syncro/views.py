@@ -1,5 +1,5 @@
-from django.http import HttpResponse, HttpRequest, HttpResponseNotFound
-from django.contrib.auth.decorators import login_required, permission_required
+from django.http import HttpResponseNotFound
+from django.contrib.auth.decorators import permission_required
 from django.shortcuts import render
 
 from .run.main import accounts_syncro
