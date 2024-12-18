@@ -1,11 +1,12 @@
 from MSApi import Project
-from django.forms import forms, ChoiceField, Select, ClearableFileInput
-from django.core.validators import FileExtensionValidator
+from django.forms import ChoiceField, Select, ClearableFileInput
+import django.forms as forms
 
 from .run.palette import get_projects_by_color, delete_palette
 
 
 class GeoJsonFileChooseForm(forms.Form):
+    date = forms.DateField(label='Выберете дату', widget=forms.DateInput(attrs={'type': 'date'}))
     file = forms.FileField(label="Выберите geoJSON файл",
                            widget=ClearableFileInput(attrs={'accept': '.geojson'}))
 

@@ -33,11 +33,12 @@ def run(request):
     form = GeoJsonFileChooseForm(request.POST, request.FILES)
     if not form.is_valid():
         return render(request, 'error.html', {'error': form.errors})
+    date = form.cleaned_data['date']
     file = request.FILES['file']
     geojson_data = b""
     for chunk in file.chunks():
         geojson_data += chunk
-    ok, changes, errors = delivery_map_loader.run(geojson_data)
+    ok, changes, errors = delivery_map_loader.run(geojson_data, date)
 
     if ok:
         return render(request, 'result.html', {'changes': changes, 'errors': errors})

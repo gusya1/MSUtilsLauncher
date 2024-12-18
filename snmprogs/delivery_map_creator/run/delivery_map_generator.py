@@ -1,17 +1,14 @@
 import datetime
 import json
 
-# import googlemaps
 from MSApi import MSApi, MSApiException, DateTimeFilter, Expand, CustomerOrder
 from MSApi import CompanySettings
 from django.core.files.base import ContentFile
-# from googlemaps.exceptions import ApiError, HTTPError, Timeout, TransportError
-
-from decimal import Decimal
 from yandex_geocoder import Client, NothingFound, YandexGeocoderException
 
 from .settings import MOY_SKLAD, DELIVERY_MAP_GENERATOR
 from ..AutocleanStorage import autoclean_default_storage
+from moy_sklad_utils import filters
 
 
 def create_point_feature(feature_id, lat, lon, point_name, desc, color):
@@ -51,12 +48,8 @@ def run(date):
         except ValueError as e:
             raise RuntimeError(str(e))
 
-        # date = datetime.datetime.combine(date, datetime.time())
-        map_name = date.strftime('%d.%m.%Y')
-
         # создаём фильтр по дате
-        date_filter = DateTimeFilter.gte('deliveryPlannedMoment', date)
-        date_filter += DateTimeFilter.lt('deliveryPlannedMoment', date + datetime.timedelta(days=1))
+        date_filter = filters.get_one_day_filter('deliveryPlannedMoment', date)
 
         features_list = []
         features_iter = 0
@@ -123,7 +116,7 @@ def run(date):
             except MSApiException as e:
                 error_list.append(f"Moy Sklad error: {e}")
 
-
+        map_name = date.strftime('%d.%m.%Y')
         geojson_point_collection = {
             'type': "FeatureCollection",
             'metadata': {

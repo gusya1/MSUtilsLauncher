@@ -3,11 +3,13 @@ from datetime import datetime
 from MSApi import Project, CustomerOrder, Filter, MSApi, \
     error_handler, MSApiException, MSApiHttpException, DateTimeFilter
 import json
+
+from moy_sklad_utils import filters
 from .settings import MOY_SKLAD
 from .palette import get_projects_by_color
 
 
-def run(geojson_data):
+def run(geojson_data, date):
     error_list = []
     change_list = []
     try:
@@ -31,20 +33,19 @@ def run(geojson_data):
         for id, color in orders.items():
             try:
                 project: Project = projects_by_color.get(color, None)
+                date_filter = filters.get_one_day_filter('deliveryPlannedMoment', date)
                 if not project:
                     error_list.append("Заказ {}: Цвет {} не определён".format(id, color))
                     continue
-                c_orders = list(CustomerOrder.gen_list(filters=
-                                                       Filter.eq("name", id)
-                                                       + DateTimeFilter.gt("deliveryPlannedMoment", current_year)))
-                if not c_orders:
+                customer_orders = list(CustomerOrder.gen_list(filters= Filter.eq("name", id) + date_filter))
+                if not customer_orders:
                     error_list.append("Заказ {}: Заказ не найден".format(id))
                     continue
-                if len(c_orders) > 1:
+                if len(customer_orders) > 1:
                     error_list.append("Заказ {}: Неоднозначный номер заказа".format(id))
                     continue
 
-                order: CustomerOrder = c_orders[0]
+                order: CustomerOrder = customer_orders[0]
                 order_proj = order.get_project()
                 if order_proj is not None:
                     error_list.append("Заказ {}: Проект уже заполнен".format(id))
