@@ -2,5 +2,15 @@
 requires-python = "~=3.12"
 
 [tool.ruff]
-line-length = 79
+line-length = 121
 src = ["snmprogs"]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "UP",
+]
+ignore = [
+    "UP032",
+]

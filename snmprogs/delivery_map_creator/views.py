@@ -38,6 +38,6 @@ def download(request):
         response = HttpResponse(file.read(), content_type="application/geojson")
         response['Content-Disposition'] = 'inline; filename=' + download_file
         return response
-    except IOError:
+    except OSError:
         return HttpResponseNotFound()
 

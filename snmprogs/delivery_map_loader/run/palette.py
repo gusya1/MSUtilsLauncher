@@ -23,7 +23,7 @@ def change_palette(project_by_color):
         df.to_csv(get_palette_path(), index=False)
         get_projects_by_color()
         return True, ["Палитра изменена"], []
-    except IOError as e:
+    except OSError as e:
         return False, [], [str(e)]
     except RuntimeError as e:
         return False, [], [str(e)]
