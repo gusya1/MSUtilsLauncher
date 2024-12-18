@@ -1,10 +1,6 @@
-import sys
 
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.shortcuts import render
 from django.apps import apps
-from django.contrib.auth.models import User
-from django.urls import include
 
 from .apps import SnmAppBase
 

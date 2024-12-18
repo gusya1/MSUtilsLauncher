@@ -14,7 +14,6 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.apps import apps
-from django.contrib import admin
 from django.urls import path, include
 
 from . import views
@@ -22,14 +21,6 @@ from .apps import SnmAppBase
 
 urlpatterns = [
     path('', views.index, name='root'),
-    # path('scripts/list', views.list_scripts, name='scripts/list'),
-    # path('scripts/create', views.create_script, name='scripts/create'),
-    # path('scripts/edit/<int:_id>/', views.edit_script),
-    # path('scripts/show/<int:_id>/', views.show_script),
-    # path('scripts/run/<int:_id>/', views.run_script),
-    # path('demand_creator/', include('demand_creator.urls')),
-    # path('processing_creator/', include('processing_creator.urls')),
-    # path('accounts_syncro/', include('accounts_syncro.urls')),
 ]
 
 
