@@ -1,9 +1,6 @@
-import os
 
-from django.http import HttpResponse, HttpRequest, HttpResponseNotFound
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import permission_required
 from django.shortcuts import render
-from django.utils.formats import date_format
 
 from .run import delivery_map_loader
 from .forms import GeoJsonFileChooseForm, SettingsForm
