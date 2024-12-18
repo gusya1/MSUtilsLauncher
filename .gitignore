@@ -6,4 +6,5 @@ snmprogs/db.sqlite3
 snmprogs/debug.log
 public_html
 logs
+tmp
 snmprogs/media/apps/delivery_map_loader/settings/palette.csv
