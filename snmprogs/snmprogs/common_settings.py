@@ -29,7 +29,6 @@ INSTALLED_APPS = [
     'accounts_syncro',
     'delivery_map_creator',
     'delivery_map_loader',
-    'woomssync',
 ]
 
 MIDDLEWARE = [
