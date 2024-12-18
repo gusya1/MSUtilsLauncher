@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 import threading
-from django.conf import settings
 
 
 class AutocleanStorage(FileSystemStorage):

@@ -1,7 +1,6 @@
-import datetime
 import json
 
-from MSApi import MSApi, MSApiException, DateTimeFilter, Expand, CustomerOrder
+from MSApi import MSApi, MSApiException, Expand, CustomerOrder
 from MSApi import CompanySettings
 from django.core.files.base import ContentFile
 from yandex_geocoder import Client, NothingFound, YandexGeocoderException
@@ -54,7 +53,6 @@ def run(date):
         features_list = []
         features_iter = 0
 
-        offset = 0
         for customer_order in CustomerOrder.gen_list(filters=date_filter, expand=Expand('agent', 'project')):
             customer_order: CustomerOrder
             try:
@@ -100,7 +98,7 @@ def run(date):
                         color
                     ))
                     features_iter += 1
-                except NothingFound as e:
+                except NothingFound:
                     error_list.append(f"Контрагент [{agent.get_name()}]: Адрес не найден на карте")
                     continue
             except YandexGeocoderException as e:

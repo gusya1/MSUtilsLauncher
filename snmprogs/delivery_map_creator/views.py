@@ -1,7 +1,6 @@
-from django.http import HttpResponse, HttpRequest, HttpResponseNotFound
-from django.contrib.auth.decorators import login_required, permission_required
+from django.http import HttpResponse, HttpResponseNotFound
+from django.contrib.auth.decorators import permission_required
 from django.shortcuts import render
-from django.utils.formats import date_format
 
 from .AutocleanStorage import autoclean_default_storage
 from .run import delivery_map_generator
@@ -39,6 +38,6 @@ def download(request):
         response = HttpResponse(file.read(), content_type="application/geojson")
         response['Content-Disposition'] = 'inline; filename=' + download_file
         return response
-    except IOError as e:
+    except IOError:
         return HttpResponseNotFound()
 
