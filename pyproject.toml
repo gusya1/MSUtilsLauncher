@@ -15,4 +15,10 @@ select = [
 ignore = [
     "UP032",
     "D212",
+    "D104",
+    "D100",
+    "D101", # Missing docstring in public class
+    "D103",
+    "D107", # Missing docstring in `__init__`
+    "D211", # `no-blank-line-before-class`
 ]
