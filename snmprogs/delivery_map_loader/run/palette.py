@@ -3,7 +3,7 @@ import re
 
 import pandas as pd
 from MSApi import Project
-from snmprogs.snmprogs import settings
+from snmprogs import settings
 from delivery_map_loader.apps import DeliveryMapLoaderConfig as App
 
 

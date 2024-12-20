@@ -3,7 +3,7 @@ import datetime
 from MSApi import MSApi, MSApiException, DateTimeFilter, Expand, CustomerOrder, Demand
 from MSApi import CompanySettings
 
-from settings import MOY_SKLAD
+from .settings import MOY_SKLAD
 
 
 def generate_demands(date):
