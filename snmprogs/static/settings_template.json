@@ -1,0 +1,12 @@
+{
+  "moy_sklad_auth": {
+    "token": ""
+  },
+  "delivery_map_generator":
+  {
+    "projects_blacklist": "Черный список проектов для генерации карты",
+    "yandexmaps_key": "",
+    "default_color": "#b3b3b3",
+    "delivery_time_missed_color": "#FF0000"
+  }
+}

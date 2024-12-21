@@ -3,3 +3,4 @@ Django~=3.2.9
 pandas>=1.1.5
 yandex_geocoder>=3.0.1
 ruff>=0.8.3
+pydantic~=2.10.4

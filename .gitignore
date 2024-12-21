@@ -7,4 +7,5 @@ snmprogs/debug.log
 public_html
 logs
 tmp
+settings.json
 snmprogs/media/apps/delivery_map_loader/settings/palette.csv
