@@ -3,16 +3,22 @@ from MSApi import Project, CustomerOrder, Filter, MSApi, \
     error_handler, MSApiException, MSApiHttpException
 import json
 
-from moy_sklad_utils import filters
-from .settings import MOY_SKLAD
-from .palette import get_projects_by_color
+from moy_sklad_utils import filters, auth
+from .palette_settings import get_projects_by_color
 
+def find_project_by_name(project_name):
+    for project in Project.gen_list():
+        if project.get_name() != project_name:
+            continue
+        return project
+    else:
+        raise RuntimeError("Проект {} не найден".format(project_name))
 
 def run(geojson_data, date):
     error_list = []
     change_list = []
     try:
-        MSApi.set_access_token(MOY_SKLAD.TOKEN)
+        MSApi.set_access_token(auth.get_moy_sklad_token())
 
         orders = {}
 
@@ -30,7 +36,7 @@ def run(geojson_data, date):
 
         for order_id, color in orders.items():
             try:
-                project: Project = projects_by_color.get(color, None)
+                project: Project = find_project_by_name(projects_by_color.get(color, None))
                 date_filter = filters.get_one_day_filter('deliveryPlannedMoment', date)
                 if not project:
                     error_list.append("Заказ {}: Цвет {} не определён".format(order_id, color))

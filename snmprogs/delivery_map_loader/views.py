@@ -1,11 +1,48 @@
-
 from django.contrib.auth.decorators import permission_required
 from django.shortcuts import render
 
 from .run import delivery_map_loader
-from .forms import GeoJsonFileChooseForm, SettingsForm
+from .forms import GeoJsonFileChooseForm, PaletteForm
 from .apps import DeliveryMapLoaderConfig as App
-from .run.palette import change_palette
+from .run.palette_settings import change_palette, get_projects_by_color
+from .run.projects import get_project_names
+
+
+def make_project_name_choice(project_name: str) -> tuple[str, str]:
+    return project_name, project_name
+
+
+def make_project_choices():
+    empty_choice = ("", "")
+    result = [empty_choice]
+    result += list(make_project_name_choice(project_name) for project_name in get_project_names())
+    return result
+
+
+def filter_not_empty_value(data):
+    key, value = data
+    return value
+
+
+def get_yandex_maps_constructor_hotbar_colors():
+    return [
+        "#82cdff",
+        "#1e98ff",
+        "#177bc9",
+        "#0e4779",
+        "#ffd21e",
+        "#ff931e",
+        "#e6761b",
+        "#ed4543",
+        "#56db40",
+        "#1bad03",
+        "#97a100",
+        "#595959",
+        "#b3b3b3",
+        "#f371d1",
+        "#b51eff",
+        "#793d0e",
+    ]
 
 
 @permission_required('root.view_post')
@@ -46,7 +83,8 @@ def run(request):
 @permission_required('root.view_post')
 def settings(request):
     if request.method == 'GET':
-        form = SettingsForm()
+        form = PaletteForm(get_yandex_maps_constructor_hotbar_colors())
+        form.fill(make_project_choices(), get_projects_by_color())
         return render(request, 'base_app_page.html',
                       {
                           'title': "{}: Настройки".format(App.verbose_name),
@@ -56,13 +94,12 @@ def settings(request):
                           'description': 'settings_description.html'
                       })
     else:
-        form = SettingsForm(request.POST)
+        form = PaletteForm(get_yandex_maps_constructor_hotbar_colors(), request.POST)
         if form.is_valid():
             project_by_color = {}
-            for key, data in form.data.items():
-                if key in form.fields.keys() and len(data) != 0:
-                    project_by_color[key] = data
-            ok, changes, errors = change_palette(project_by_color)
-            return render(request, 'result.html', {'changes': changes, 'errors': errors})
+            for key, data in filter(filter_not_empty_value, form.get_color_dict()):
+                project_by_color[key] = data
+            change_palette(project_by_color)
+            return render(request, 'result.html', {'changes': [], 'errors': []})
         else:
             return render(request, 'error.html', {'error': form.errors})

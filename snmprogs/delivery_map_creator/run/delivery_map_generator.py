@@ -5,9 +5,9 @@ from MSApi import CompanySettings
 from django.core.files.base import ContentFile
 from yandex_geocoder import Client, NothingFound, YandexGeocoderException
 
-from .settings import get_moy_sklad_token, get_delivery_map_generator_settings
+from .settings import get_delivery_map_generator_settings
 from ..AutocleanStorage import autoclean_default_storage
-from moy_sklad_utils import filters
+from moy_sklad_utils import filters, auth
 
 
 class FillingOutError(RuntimeError):
@@ -134,7 +134,7 @@ class FeatureCollection:
 
 def run(date):
     try:
-        MSApi.set_access_token(get_moy_sklad_token())
+        MSApi.set_access_token(auth.get_moy_sklad_token())
         generator_settings = get_delivery_map_generator_settings()
 
         projects_blacklist = find_custom_entity(generator_settings.projects_blacklist)
