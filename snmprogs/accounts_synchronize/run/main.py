@@ -1,9 +1,7 @@
-import datetime
-
-from MSApi import MSApi, Filter, MSApiException, DateTimeFilter, Expand, CustomerOrder, error_handler
+from MSApi import MSApi, Filter, MSApiException, Expand, CustomerOrder, error_handler
 from MSApi import Organization
 
-from moy_sklad_utils import auth, custom_entity_utils
+from moy_sklad_utils import auth, custom_entity_utils, filters
 
 from .settings import get_account_synchronize_settings
 
@@ -27,8 +25,7 @@ def accounts_synchronize(date):
         if len(accounts_meta_dict) == 0:
             raise RuntimeError("Юрлицо [{}]: Счета не найдены".format(settings.organization_name))
 
-        date_filter = DateTimeFilter.gte('deliveryPlannedMoment', date)
-        date_filter += DateTimeFilter.lt('deliveryPlannedMoment', date + datetime.timedelta(days=1))
+        date_filter = filters.get_one_day_filter('deliveryPlannedMoment', date)
 
         change_list = []
         updatable_customerorder_list = []
@@ -37,8 +34,8 @@ def accounts_synchronize(date):
             if account_meta is None:
                 raise RuntimeError(f"Счёт \"{account_name}\" не найден")
 
-            filters = Filter.eq("state.name", state_name) + date_filter
-            for customer_order in CustomerOrder.gen_list(expand=Expand("state"), filters=filters):
+            customer_order_filters = Filter.eq("state.name", state_name) + date_filter
+            for customer_order in CustomerOrder.gen_list(expand=Expand("state"), filters=customer_order_filters):
                 org_acc = customer_order.get_organization_account()
                 if org_acc is not None:
                     if org_acc.get_meta() == account_meta:

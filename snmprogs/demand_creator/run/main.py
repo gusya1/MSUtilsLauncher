@@ -1,28 +1,22 @@
-import datetime
+from MSApi import MSApi, MSApiException, Expand, CustomerOrder, Demand
 
-from MSApi import MSApi, MSApiException, DateTimeFilter, Expand, CustomerOrder, Demand
-from MSApi import CompanySettings
+from moy_sklad_utils import auth, custom_entity_utils, filters
 
-from .settings import MOY_SKLAD
+from .settings import get_demand_creator_settings
 
 
 def generate_demands(date):
     try:
-        MSApi.set_access_token(MOY_SKLAD.TOKEN)
+        MSApi.set_access_token(auth.get_moy_sklad_token())
 
-        for entity in CompanySettings.gen_custom_entities():
-            if entity.get_name() != MOY_SKLAD.PROJECTS_BLACKLIST_ENTITY:
-                continue
-            project_blacklist = list(entity_elem.get_name() for entity_elem in entity.gen_elements())
-            break
-        else:
-            raise RuntimeError("Справочник \'{}\' не найден".format(MOY_SKLAD.PROJECTS_BLACKLIST_ENTITY))
+        settings = get_demand_creator_settings()
+        project_blacklist = custom_entity_utils.get_entity_element_names(
+            custom_entity_utils.find_custom_entity(settings.projects_blacklist_entity))
 
         change_list = []
         error_list = []
 
-        date_filter = DateTimeFilter.gte('deliveryPlannedMoment', date)
-        date_filter += DateTimeFilter.lt('deliveryPlannedMoment', date + datetime.timedelta(days=1))
+        date_filter = filters.get_one_day_filter('deliveryPlannedMoment', date)
 
         total_count = 0
         for customer_order in CustomerOrder.gen_list(filters=date_filter, expand=Expand("project")):
