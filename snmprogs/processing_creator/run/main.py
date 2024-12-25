@@ -1,37 +1,29 @@
-import datetime
+from MSApi import MSApi, Store, Filter, MSApiException, ProcessingOrder, Expand, Processing
 
-from MSApi import MSApi, Store, Filter, MSApiException, DateTimeFilter, ProcessingOrder, Expand, Processing
-from MSApi import CompanySettings
+from moy_sklad_utils import auth, custom_entity_utils, filters
 
-from .settings import MOY_SKLAD
+from .settings import get_processing_creator_settings
 
 
 def generate_processing(date):
     try:
+        MSApi.set_access_token(auth.get_moy_sklad_token())
 
-        MSApi.set_access_token(MOY_SKLAD.TOKEN)
+        settings = get_processing_creator_settings()
+        processing_plan_blacklist = custom_entity_utils.get_entity_element_names(
+            custom_entity_utils.find_custom_entity(settings.processing_plan_blacklist_entity))
 
-        ##
-        for entity in CompanySettings.gen_custom_entities():
-            if entity.get_name() != MOY_SKLAD.PROCESSING_PLAN_BLACKLIST_ENTITY:
-                continue
-            processing_plan_blacklist = list(entity_elem.get_name() for entity_elem in entity.gen_elements())
-            break
-        else:
-            raise RuntimeError("Справочник \'{}\' не найден!".format(MOY_SKLAD.PROCESSING_PLAN_BLACKLIST_ENTITY))
-
-        for s in Store.gen_list(filters=Filter.eq('name', MOY_SKLAD.STORE_NAME)):
+        for s in Store.gen_list(filters=Filter.eq('name', settings.store_name)):
             store = s
             break
         else:
-            raise RuntimeError("Склад \'{}\' не найден!".format(MOY_SKLAD.STORE_NAME))
+            raise RuntimeError("Склад \'{}\' не найден!".format(settings.store_name))
 
         ##
         error_list = []
         change_list = []
 
-        date_filter = DateTimeFilter.gte('deliveryPlannedMoment', date)
-        date_filter += DateTimeFilter.lt('deliveryPlannedMoment', date + datetime.timedelta(days=1))
+        date_filter = filters.get_one_day_filter('deliveryPlannedMoment', date)
 
         total_count = 0
         for processing_order in ProcessingOrder.gen_list(filters=date_filter, expand=Expand("processingPlan")):
