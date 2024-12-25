@@ -1,13 +1,13 @@
 import json
 
 from MSApi import MSApi, MSApiException, Expand, CustomerOrder
-from MSApi import CompanySettings
 from django.core.files.base import ContentFile
 from yandex_geocoder import Client, NothingFound, YandexGeocoderException
 
 from .settings import get_delivery_map_generator_settings
 from ..AutocleanStorage import autoclean_default_storage
 from moy_sklad_utils import filters, auth
+from moy_sklad_utils.custom_entity_utils import find_custom_entity, get_entity_element_names
 
 
 class FillingOutError(RuntimeError):
@@ -32,21 +32,6 @@ def create_point_feature(feature_id, lon, lat, point_name, desc, color):
             'marker-color': color
         }
     }
-
-
-def find_custom_entity(entity_name):
-    """
-    Поиск пользовательского справочника МойСклад.
-
-    :return список элементов в справочнике
-    """
-    for entity in CompanySettings.gen_custom_entities():
-        if entity.get_name() != entity_name:
-            continue
-        return list(entity_elem.get_name() for entity_elem in entity.gen_elements())
-    else:
-        raise RuntimeError("Справочник {} не найден!".format(entity_name))
-
 
 def authorize_yandex_maps_client(key):
     try:
@@ -137,7 +122,7 @@ def run(date):
         MSApi.set_access_token(auth.get_moy_sklad_token())
         generator_settings = get_delivery_map_generator_settings()
 
-        projects_blacklist = find_custom_entity(generator_settings.projects_blacklist)
+        projects_blacklist = get_entity_element_names(find_custom_entity(generator_settings.projects_blacklist))
         client = authorize_yandex_maps_client(generator_settings.yandexmaps_key)
 
         default_color = generator_settings.default_color

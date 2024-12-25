@@ -2,7 +2,7 @@ from django.http import HttpResponseNotFound
 from django.contrib.auth.decorators import permission_required
 from django.shortcuts import render
 
-from .run.main import accounts_syncro
+from .run.main import accounts_synchronize
 from root import forms
 from .apps import AccountsSyncConfig as App
 
@@ -23,7 +23,7 @@ def run(request):
     form = forms.DateChooseForm(request.GET)
     if not form.is_valid():
         return HttpResponseNotFound()
-    status, output = accounts_syncro(form.cleaned_data['date'])
+    status, output = accounts_synchronize(form.cleaned_data['date'])
     if status:
         return render(request, 'success.html', {'changes': output})
     else:

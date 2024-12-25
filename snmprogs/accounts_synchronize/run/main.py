@@ -1,34 +1,31 @@
 import datetime
 
 from MSApi import MSApi, Filter, MSApiException, DateTimeFilter, Expand, CustomerOrder, error_handler
-from MSApi import CompanySettings, Organization
+from MSApi import Organization
 
-from .settings import MOY_SKLAD
+from moy_sklad_utils import auth, custom_entity_utils
 
+from .settings import get_account_synchronize_settings
 
-def accounts_syncro(date):
+def accounts_synchronize(date):
     try:
-        MSApi.set_access_token(MOY_SKLAD.TOKEN)
+        MSApi.set_access_token(auth.get_moy_sklad_token())
 
-        for entity in CompanySettings.gen_custom_entities():
-            if entity.get_name() != MOY_SKLAD.STATES_AND_ACCOUNTS_ENTITY:
-                continue
-            states_and_accounts = list((entity_elem.get_name(), entity_elem.get_description())
-                                       for entity_elem in entity.gen_elements())
-            break
-        else:
-            raise RuntimeError("Справочник \"{}\" не найден!".format(MOY_SKLAD.STATES_AND_ACCOUNTS_ENTITY))
+        settings = get_account_synchronize_settings()
+        custom_entity = custom_entity_utils.find_custom_entity(settings.states_and_accounts_entity)
+        states_and_accounts = list((entity_elem.get_name(), entity_elem.get_description())
+                                   for entity_elem in custom_entity.gen_elements())
 
         accounts_meta_dict = {}
-        for org in Organization.gen_list(filters=Filter.eq('name', MOY_SKLAD.ORGANIZATION_NAME)):
+        for org in Organization.gen_list(filters=Filter.eq('name', settings.organization_name)):
             for account in org.gen_accounts():
                 accounts_meta_dict[account.get_account_number()] = account.get_meta()
             break
         else:
-            raise RuntimeError("Юрлицо \"{}\" не найдено!".format(MOY_SKLAD.ORGANIZATION_NAME))
+            raise RuntimeError("Юрлицо \"{}\" не найдено!".format(settings.organization_name))
 
         if len(accounts_meta_dict) == 0:
-            raise RuntimeError("Юрлицо [{}]: Счета не найдены".format(MOY_SKLAD.ORGANIZATION_NAME))
+            raise RuntimeError("Юрлицо [{}]: Счета не найдены".format(settings.organization_name))
 
         date_filter = DateTimeFilter.gte('deliveryPlannedMoment', date)
         date_filter += DateTimeFilter.lt('deliveryPlannedMoment', date + datetime.timedelta(days=1))

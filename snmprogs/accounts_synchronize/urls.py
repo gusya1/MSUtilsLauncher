@@ -21,6 +21,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.index, name='accounts_syncro'),
-    path('run', views.run, name='accounts_syncro/run'),
+    path('', views.index, name='accounts_synchronize'),
+    path('run', views.run, name='accounts_synchronize/run'),
 ]

@@ -26,7 +26,7 @@ INSTALLED_APPS = [
     'root',
     'processing_creator',
     'demand_creator',
-    'accounts_syncro',
+    'accounts_synchronize',
     'delivery_map_creator',
     'delivery_map_loader',
 ]
