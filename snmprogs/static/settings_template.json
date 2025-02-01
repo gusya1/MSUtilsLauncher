@@ -2,11 +2,30 @@
   "moy_sklad_auth": {
     "token": ""
   },
-  "delivery_map_generator":
-  {
+  "delivery_map_generator": {
     "projects_blacklist": "Черный список проектов для генерации карты",
     "yandexmaps_key": "",
     "default_color": "#b3b3b3",
     "delivery_time_missed_color": "#FF0000"
+  },
+  "delivery_map_palette": {
+    "palette": {
+      "#82cdff": "Яндекс 3",
+      "#ed4543": "Яндекс 3",
+      "#56db40": "Яндекс 2",
+      "#b3b3b3": "Владимир +79046369067",
+      "#793d0e": "С-П"
+    }
+  },
+  "accounts_synchronize": {
+    "states_and_accounts_entity": "Соответствия статусов и расчетных счетов для синхронизации",
+    "organization_name": "ИП Никифорова Наталья Сергеевна"
+  },
+  "demand_creator": {
+    "projects_blacklist_entity": "Черный список проектов для автоматических отгрузок"
+  },
+  "processing_creator": {
+    "processing_plan_blacklist_entity": "Черный список техкарт для автоматического производства",
+    "store_name": "Основной склад"
   }
 }

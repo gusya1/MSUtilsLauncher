@@ -1,8 +1,10 @@
 import json
+import logging
 
+import yandex_geocoder
 from MSApi import MSApi, MSApiException, Expand, CustomerOrder
 from django.core.files.base import ContentFile
-from yandex_geocoder import Client, NothingFound, YandexGeocoderException
+from yandex_geocoder import Client, YandexGeocoderException
 
 from .settings import get_delivery_map_generator_settings
 from ..AutocleanStorage import autoclean_default_storage
@@ -63,7 +65,7 @@ def get_actual_address_coordinates(actual_address, client):
     try:
         coordinates = client.coordinates(actual_address)
         return float(coordinates[0]), float(coordinates[1])
-    except NothingFound:
+    except yandex_geocoder.NothingFound:
         raise AddressError("Адрес не найден на карте")
 
 
@@ -134,9 +136,10 @@ def run(date):
         feature_collection = FeatureCollection(map_name)
 
         for customer_order in filter(
-                lambda order: contains_project_in_blacklist(order.get_project(), projects_blacklist),
+                lambda order: not contains_project_in_blacklist(order.get_project(), projects_blacklist),
                 gen_customers_orders_per_day(date)):
             customer_order: CustomerOrder
+            logging.info("Processing customer order {}".format(customer_order.get_name()))
             try:
                 try:
                     customer_order_point = make_customer_order_point(customer_order, client)
@@ -150,6 +153,8 @@ def run(date):
                                                customer_order_point.delivery_time)
                 feature_collection.add_new_feature(lon, lat, point_name, customer_order_point.actual_address, color)
 
+            except yandex_geocoder.InvalidKey:
+                error_list.append(f"Ошибка Яндекс Геокодера: Неверный ключ")
             except YandexGeocoderException as e:
                 error_list.append(f"Yandex Maps API error: {e}")
             except MSApiException as e:
