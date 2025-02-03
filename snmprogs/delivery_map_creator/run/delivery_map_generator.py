@@ -1,15 +1,16 @@
 import json
 import logging
 
-import yandex_geocoder
+import ya_geocoder
 from MSApi import MSApi, MSApiException, Expand, CustomerOrder
 from django.core.files.base import ContentFile
-from yandex_geocoder import Client, YandexGeocoderException
 
 from .settings import get_delivery_map_generator_settings
 from ..AutocleanStorage import autoclean_default_storage
 from moy_sklad_utils import filters, auth
 from moy_sklad_utils.custom_entity_utils import find_custom_entity, get_entity_element_names
+from ya_geocoder.client import Client
+from ya_geocoder.exceptions import NothingFonudError
 
 
 class FillingOutError(RuntimeError):
@@ -35,11 +36,9 @@ def create_point_feature(feature_id, lon, lat, point_name, desc, color):
         }
     }
 
+
 def authorize_yandex_maps_client(key):
-    try:
-        return Client(key)
-    except ValueError as e:
-        raise RuntimeError(str(e))
+    return Client(key)
 
 
 def contains_project_in_blacklist(project, blacklist):
@@ -61,11 +60,11 @@ def get_agent_actual_address(agent):
     return actual_address
 
 
-def get_actual_address_coordinates(actual_address, client):
+def get_actual_address_coordinates(actual_address, client: Client):
     try:
-        coordinates = client.coordinates(actual_address)
+        coordinates = client.get_coordinates(actual_address)
         return float(coordinates[0]), float(coordinates[1])
-    except yandex_geocoder.NothingFound:
+    except NothingFonudError:
         raise AddressError("Адрес не найден на карте")
 
 
@@ -99,6 +98,17 @@ def format_point_name(customer_order_name, delivery_time):
     return "{} ({})".format(customer_order_name, delivery_time)
 
 
+class ColorManager:
+    def __init__(self, default_color: str, delivery_time_missed_color: str):
+        self.default_color = default_color
+        self.delivery_time_missed_color = delivery_time_missed_color
+
+    def get_color(self, delivery_time):
+        if delivery_time is None:
+            return self.delivery_time_missed_color
+        return self.default_color
+
+
 class FeatureCollection:
     def __init__(self, map_name):
         self.map_name = map_name
@@ -127,8 +137,7 @@ def run(date):
         projects_blacklist = get_entity_element_names(find_custom_entity(generator_settings.projects_blacklist))
         client = authorize_yandex_maps_client(generator_settings.yandexmaps_key)
 
-        default_color = generator_settings.default_color
-        delivery_time_missed_color = generator_settings.delivery_time_missed_color
+        color_manager = ColorManager(generator_settings.default_color, generator_settings.delivery_time_missed_color)
 
         error_list = []
 
@@ -147,16 +156,14 @@ def run(date):
                     error_list.append(str(e))
                     continue
 
-                color = default_color if (customer_order_point.delivery_time is None) else delivery_time_missed_color
+                color = color_manager.get_color(customer_order_point.delivery_time)
                 lon, lat = customer_order_point.lon_lat
                 point_name = format_point_name(customer_order_point.customer_order_name,
                                                customer_order_point.delivery_time)
                 feature_collection.add_new_feature(lon, lat, point_name, customer_order_point.actual_address, color)
 
-            except yandex_geocoder.InvalidKey:
-                error_list.append(f"Ошибка Яндекс Геокодера: Неверный ключ")
-            except YandexGeocoderException as e:
-                error_list.append(f"Yandex Maps API error: {e}")
+            except ya_geocoder.exceptions.ResponseError as e:
+                error_list.append(f"Ошибка запроса Геокодера: {e}")
             except MSApiException as e:
                 error_list.append(f"Moy Sklad error: {e}")
 
@@ -165,7 +172,9 @@ def run(date):
                                                        ContentFile(data_json))
         return error_list, true_filename
 
+    except ya_geocoder.exceptions.YandexGeocoderError as e:
+        return [f"Ошибка Яндекс Геокодера: {e}"], ""
     except RuntimeError as e:
-        return [f"Error: {e}"], ""
+        return [f"Ошибка выполнения: {e}"], ""
     except MSApiException as e:
-        return [f"Moy Sklad error: {e}"], ""
+        return [f"Ошибка работы с МойСклад: {e}"], ""
