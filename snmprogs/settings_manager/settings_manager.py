@@ -2,6 +2,8 @@ from snmprogs import settings
 
 import pydantic as pdt
 
+from typing import Type
+
 import os
 import json
 
@@ -18,8 +20,7 @@ def write_settings(settings):
   settings_file = open(settings_file_path, "w", encoding="utf-8")
   json.dump(settings, settings_file, ensure_ascii=False, indent=4)
 
-
-def get_settings(group: str, model_type: type[pdt.BaseModel]) -> pdt.BaseModel:
+def get_settings(group: str, model_type: Type[pdt.BaseModel]) -> pdt.BaseModel:
   json_data = read_settings()
   return model_type.model_validate(json_data[group])
 

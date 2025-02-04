@@ -1,6 +1,8 @@
 from django.contrib.auth.decorators import permission_required
 from django.shortcuts import render
 
+from typing import Tuple
+
 from .run import delivery_map_loader
 from .forms import GeoJsonFileChooseForm, PaletteForm
 from .apps import DeliveryMapLoaderConfig as App
@@ -8,7 +10,7 @@ from .run.palette_settings import change_palette, get_projects_by_color
 from .run.projects import get_project_names
 
 
-def make_project_name_choice(project_name: str) -> tuple[str, str]:
+def make_project_name_choice(project_name: str) -> Tuple[str, str]:
     return project_name, project_name
 
 

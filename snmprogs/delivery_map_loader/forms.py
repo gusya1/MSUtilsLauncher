@@ -1,6 +1,8 @@
 from django.forms import ChoiceField, Select, ClearableFileInput
 import django.forms as forms
 
+from typing import List, Dict, Tuple
+
 
 class GeoJsonFileChooseForm(forms.Form):
     date = forms.DateField(label='Выберете дату', widget=forms.DateInput(attrs={'type': 'date'}))
@@ -16,11 +18,11 @@ class ColoredChoiceField(ChoiceField):
 
 class PaletteForm(forms.Form):
 
-    def __init__(self, colors: list[str], *args, **kwargs):
+    def __init__(self, colors: List[str], *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.colors = colors
 
-    def fill(self, choices: list[tuple[str, str]], projects_by_color: dict[str, str]):
+    def fill(self, choices: List[Tuple[str, str]], projects_by_color: Dict[str, str]):
         for color in self.colors:
             current_project = projects_by_color.get(color, None)
             self.fields[color] = ColoredChoiceField(color=color,

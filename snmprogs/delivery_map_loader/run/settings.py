@@ -1,3 +1,4 @@
+from typing import Dict
 import pydantic as pdt
 
 from settings_manager import settings_manager
@@ -7,7 +8,7 @@ ColorCode = pdt.constr(pattern=r"#[abcdef1234567890]{6}")
 
 
 class DeliveryMapPaletteSettings(pdt.BaseModel):
-    palette: dict[ColorCode, str]
+    palette: Dict[ColorCode, str]
 
 
 def write_palette(palette: DeliveryMapPaletteSettings):

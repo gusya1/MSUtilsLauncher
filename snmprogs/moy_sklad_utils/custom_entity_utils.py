@@ -1,5 +1,6 @@
 from MSApi import CompanySettings, CustomEntity
 
+from typing import List
 
 def find_custom_entity(entity_name) -> CustomEntity:
     """
@@ -15,5 +16,5 @@ def find_custom_entity(entity_name) -> CustomEntity:
         raise RuntimeError("Справочник {} не найден!".format(entity_name))
 
 
-def get_entity_element_names(entity: CustomEntity) -> list[str]:
+def get_entity_element_names(entity: CustomEntity) -> List[str]:
     return list(entity_elem.get_name() for entity_elem in entity.gen_elements())
