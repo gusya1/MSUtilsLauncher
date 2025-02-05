@@ -1,14 +1,13 @@
-from snmprogs import settings
+from django.contrib.staticfiles import finders
 
 import pydantic as pdt
 
 from typing import Type
 
-import os
 import json
 
 def get_settings_file_path():
-  return os.path.join(settings.STATIC_ROOT, "settings.json")
+  return finders.find("settings.json")
 
 def read_settings():
   settings_file_path = get_settings_file_path()
