@@ -8,6 +8,7 @@ ColorCode = pdt.constr(pattern=r"#[abcdef1234567890]{6}")
 
 
 class DeliveryMapPaletteSettings(pdt.BaseModel):
+    delivery_order_attribute_name: str = ""
     palette: Dict[ColorCode, str]
 
 

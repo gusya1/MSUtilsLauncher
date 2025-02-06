@@ -1,13 +1,14 @@
+import logging
+from typing import Tuple
+
 from django.contrib.auth.decorators import permission_required
 from django.shortcuts import render
 
-from typing import Tuple
-
-from .run import delivery_map_loader
-from .forms import GeoJsonFileChooseForm, PaletteForm
 from .apps import DeliveryMapLoaderConfig as App
-from .run.palette_settings import change_palette, get_projects_by_color
+from .forms import GeoJsonFileChooseForm, PaletteForm
+from .run import delivery_map_loader
 from .run.projects import get_project_names
+from .run.settings import DeliveryMapPaletteSettings, read_palette, write_palette
 
 
 def make_project_name_choice(project_name: str) -> Tuple[str, str]:
@@ -82,11 +83,40 @@ def run(request):
         return render(request, 'error.html', {'errors': errors})
 
 
+def get_field_label(form, field_name) -> str:
+    return form[field_name].label
+
+
+def get_field_value(form, field_name) -> str:
+    return form.cleaned_data[field_name]
+
+
+def format_field_change(form, field_name):
+    return "Изменено значение поля '{}' на '{}'".format(get_field_label(form, field_name),
+                                                        get_field_value(form, field_name))
+
+
+def apply_settings(request):
+    form = PaletteForm(get_yandex_maps_constructor_hotbar_colors(), make_project_choices(), request.POST)
+    form.fill(read_palette())
+    if not form.is_valid():
+        return render(request, 'error.html', {'error': form.errors})
+
+    logging.info("Changed fields: {}".format(" ,".join(form.changed_data)))
+    settings_model = DeliveryMapPaletteSettings(
+        delivery_order_attribute_name=get_field_value(form, 'delivery_order_attribute_name'),
+        palette=dict(filter(filter_not_empty_value, form.get_color_dict())))
+    write_palette(settings_model)
+
+    changes = list(format_field_change(form, field_name) for field_name in form.changed_data)
+    return render(request, 'result.html', {'changes': changes, 'errors': []})
+
+
 @permission_required('root.view_post')
 def settings(request):
     if request.method == 'GET':
-        form = PaletteForm(get_yandex_maps_constructor_hotbar_colors())
-        form.fill(make_project_choices(), get_projects_by_color())
+        form = PaletteForm(get_yandex_maps_constructor_hotbar_colors(), make_project_choices())
+        form.fill(read_palette())
         return render(request, 'base_app_page.html',
                       {
                           'title': "{}: Настройки".format(App.verbose_name),
@@ -96,12 +126,4 @@ def settings(request):
                           'description': 'settings_description.html'
                       })
     else:
-        form = PaletteForm(get_yandex_maps_constructor_hotbar_colors(), request.POST)
-        if form.is_valid():
-            project_by_color = {}
-            for key, data in filter(filter_not_empty_value, form.get_color_dict()):
-                project_by_color[key] = data
-            change_palette(project_by_color)
-            return render(request, 'result.html', {'changes': [], 'errors': []})
-        else:
-            return render(request, 'error.html', {'error': form.errors})
+        return apply_settings(request)

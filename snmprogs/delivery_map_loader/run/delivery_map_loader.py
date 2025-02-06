@@ -1,18 +1,71 @@
-
-from MSApi import Project, CustomerOrder, Filter, MSApi, \
+from MSApi import Project, CustomerOrder, MSApi, \
     error_handler, MSApiException, MSApiHttpException
-import json
 
 from moy_sklad_utils import filters, auth
-from .palette_settings import get_projects_by_color
+from MSApi import Filter
+
+from . import settings
+from map_constructor_model.feature_collection import FeatureCollection
+from map_constructor_model.feature import Feature
+from map_constructor_model.properties import MapConstructorPointProperties
+
+
+def update_customer_order(order_id, updated_data):
+    try:
+        response = MSApi.auch_put("entity/{}/{}".format(CustomerOrder.get_typename(), order_id), json=updated_data)
+        error_handler(response)
+    except MSApiException as e:
+        raise RuntimeError("Заказ {}: Ошибка МойСклад: {}".format(order_id, str(e)))
+
 
 def find_project_by_name(project_name):
-    for project in Project.gen_list():
-        if project.get_name() != project_name:
-            continue
-        return project
-    else:
-        raise RuntimeError("Проект {} не найден".format(project_name))
+    projects = list(Project.gen_list(filters=Filter.eq("name", project_name)))
+    if len(projects) > 1:
+        raise RuntimeError("Неоднозначное имя проекта: {}".format(project_name))
+    if len(projects) < 1:
+        raise RuntimeError("Проект '{}' не найден".format(project_name))
+    return projects[0]
+
+
+def find_customer_order_by_name(order_id, additional_filters=None):
+    name_filter = Filter.eq("name", order_id)
+    customer_order_filters = name_filter + additional_filters if additional_filters else name_filter
+    customer_orders = list(CustomerOrder.gen_list(filters=customer_order_filters))
+    if len(customer_orders) > 1:
+        raise RuntimeError("Неоднозначный номер заказа: {}".format(order_id))
+    if len(customer_orders) < 1:
+        raise RuntimeError("Заказ '{}' не найден".format(order_id))
+    return customer_orders[0]
+
+
+def find_customer_order_attribute_by_name(attribute_name):
+    attributes = list(filter(lambda attr: attr.get_name() == attribute_name, CustomerOrder.gen_attributes_list()))
+    if len(attributes) > 1:
+        raise RuntimeError("Неоднозначное имя аттрибута: {}".format(attribute_name))
+    if len(attributes) < 1:
+        raise RuntimeError("Аттрибут '{}' не найден".format(attribute_name))
+    return attributes[0]
+
+
+def check_customer_order_project(customer_order: CustomerOrder):
+    if customer_order.get_project() is not None:
+        raise RuntimeError("Заказ {}: Проект уже заполнен".format(customer_order.get_name()))
+
+
+def get_project_by_color(projects_by_color, color) -> Project:
+    project_name = projects_by_color.get(color, None)
+    if project_name is None:
+        raise RuntimeError("Цвет {} не определён".format(color))
+    return find_project_by_name(project_name)
+
+
+def get_properties(feature: Feature) -> MapConstructorPointProperties:
+    return MapConstructorPointProperties.model_validate(feature.properties)
+
+
+def get_order_id_from_icon_caption(icon_caption: str) -> str:
+    return icon_caption.split(" ")[0]
+
 
 def run(geojson_data, date):
     error_list = []
@@ -20,54 +73,42 @@ def run(geojson_data, date):
     try:
         MSApi.set_access_token(auth.get_moy_sklad_token())
 
-        orders = {}
+        settings_model = settings.read_palette()
+        projects_by_color = settings_model.palette
+        delivery_order_attribute_name = settings_model.delivery_order_attribute_name
 
-        gmap = json.loads(geojson_data)
-        for feature in gmap.get("features", []):
+        date_filter = filters.get_one_day_filter('deliveryPlannedMoment', date)
+        delivery_order_attribute = find_customer_order_attribute_by_name(delivery_order_attribute_name)
+
+        collection = FeatureCollection.model_validate_json(geojson_data)
+        for feature in collection.features:
             try:
-                props = feature["properties"]
-                id = props["iconCaption"].split(" ")[0]
-                color = props["marker-color"]
-                orders[id] = color
-            except KeyError as e:
-                error_list.append("Объект {}: Поле {} не найдено".format(str(feature.get("id", "None")), str(e)))
+                properties = get_properties(feature)
+                order_id = get_order_id_from_icon_caption(properties.iconCaption)
+                project = get_project_by_color(projects_by_color, properties.marker_color)
+                delivery_order_number = int(properties.iconContent)
+                customer_order = find_customer_order_by_name(order_id, date_filter)
 
-        projects_by_color = get_projects_by_color()
-
-        for order_id, color in orders.items():
-            try:
-                project: Project = find_project_by_name(projects_by_color.get(color, None))
-                date_filter = filters.get_one_day_filter('deliveryPlannedMoment', date)
-                if not project:
-                    error_list.append("Заказ {}: Цвет {} не определён".format(order_id, color))
-                    continue
-                customer_orders = list(CustomerOrder.gen_list(filters= Filter.eq("name", order_id) + date_filter))
-                if not customer_orders:
-                    error_list.append("Заказ {}: Заказ не найден".format(order_id))
-                    continue
-                if len(customer_orders) > 1:
-                    error_list.append("Заказ {}: Неоднозначный номер заказа".format(order_id))
-                    continue
-
-                order: CustomerOrder = customer_orders[0]
-                order_proj = order.get_project()
-                if order_proj is not None:
-                    error_list.append("Заказ {}: Проект уже заполнен".format(order_id))
-                    continue
+                check_customer_order_project(customer_order)
 
                 updated_data = {
                     "project": {
                         "meta": project.get_meta().get_json()
-                    }
+                    },
+                    "attributes": [
+                        {
+                            "meta": delivery_order_attribute.get_meta().get_json(),
+                            "value": delivery_order_number
+                        }
+                    ]
                 }
 
-                response = MSApi.auch_put("entity/{}/{}".format(CustomerOrder.get_typename(), order.get_id()),
-                                          json=updated_data)
-                error_handler(response)
-                change_list.append("Заказ {}: Проект успешно изменён на {}".format(order_id, project.get_name()))
-
-            except MSApiException as e:
-                error_list.append("Заказ {}: Ошибка МойСклад: {}".format(order_id, str(e)))
+                update_customer_order(customer_order.get_id(), updated_data)
+                change_list.append("Заказ {}: проект - '{}', {} - {}".format(order_id, project.get_name(),
+                                                                             delivery_order_attribute_name,
+                                                                             delivery_order_number))
+            except RuntimeError as e:
+                error_list.append(str(e))
 
     except MSApiHttpException as e:
         error_list.append("Ошибка МойСклад: {}".format(str(e)))
