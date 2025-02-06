@@ -21,22 +21,6 @@ class AddressError(FillingOutError):
     pass
 
 
-def create_point_feature(feature_id, lon, lat, point_name, desc, color):
-    return {
-        'type': "Feature",
-        'id': feature_id,
-        'geometry': {
-            'type': "Point",
-            'coordinates': [lon, lat]
-        },
-        'properties': {
-            'description': desc,
-            'iconCaption': point_name,
-            'marker-color': color
-        }
-    }
-
-
 def authorize_yandex_maps_client(key):
     return Client(key)
 
@@ -109,15 +93,43 @@ class ColorManager:
         return self.default_color
 
 
+class Feature:
+    def __init__(self):
+        self.feature_id = None
+        self.lon = None
+        self.lat = None
+        self.icon_caption = None
+        self.icon_content = None
+        self.desc = None
+        self.color = None
+
+    def make_data(self):
+        return {
+            'type': "Feature",
+            'id': self.feature_id,
+            'geometry': {
+                'type': "Point",
+                'coordinates': [self.lon, self.lat]
+            },
+            'properties': {
+                'description': self.desc,
+                'iconCaption': self.icon_caption,
+                "iconContent": self.icon_content,
+                'marker-color': self.color
+            }
+        }
+
+
 class FeatureCollection:
     def __init__(self, map_name):
         self.map_name = map_name
-        self.iter = 0
+        self.__iter = 0
         self.features = []
 
-    def add_new_feature(self, lon: float, lat: float, point_name: str, desc: str, color: str):
-        self.features.append(create_point_feature(self.iter, lon, lat, point_name, desc, color))
-        self.iter = self.iter + 1
+    def add_new_feature(self, feature: Feature):
+        feature.feature_id = self.__iter
+        self.features.append(feature)
+        self.__iter += 1
 
     def make_data(self):
         return {
@@ -125,7 +137,7 @@ class FeatureCollection:
             'metadata': {
                 'name': self.map_name,
             },
-            "features": self.features
+            "features": list(feature.make_data() for feature in self.features)
         }
 
 
@@ -149,18 +161,24 @@ def run(date):
                 gen_customers_orders_per_day(date)):
             customer_order: CustomerOrder
             logging.info("Processing customer order {}".format(customer_order.get_name()))
+
+            feature = Feature()
             try:
                 try:
                     customer_order_point = make_customer_order_point(customer_order, client)
+
+                    feature.color = color_manager.get_color(customer_order_point.delivery_time)
+                    feature.lon, feature.lat = customer_order_point.lon_lat
+                    feature.icon_caption = format_point_name(customer_order_point.customer_order_name,
+                                                             customer_order_point.delivery_time)
+                    feature.icon_content = "0"
+                    feature.desc = customer_order_point.actual_address
+
+                    feature_collection.add_new_feature(feature)
+
                 except FillingOutError as e:
                     error_list.append(str(e))
                     continue
-
-                color = color_manager.get_color(customer_order_point.delivery_time)
-                lon, lat = customer_order_point.lon_lat
-                point_name = format_point_name(customer_order_point.customer_order_name,
-                                               customer_order_point.delivery_time)
-                feature_collection.add_new_feature(lon, lat, point_name, customer_order_point.actual_address, color)
 
             except ya_geocoder.exceptions.ResponseError as e:
                 error_list.append(f"Ошибка запроса Геокодера: {e}")
