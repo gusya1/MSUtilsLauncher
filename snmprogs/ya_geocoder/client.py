@@ -38,7 +38,11 @@ class Client:
         if not data:
             raise NothingFonudError(f'Nothing found for "{address}" not found')
 
-        coordinates: str = data["GeoObjectCollection"]["featureMember"][0]["GeoObject"]["Point"]["pos"]
+        featureMembers = data["GeoObjectCollection"]["featureMember"]
+        if not featureMembers:
+            raise NothingFonudError(f'Nothing found for "{address}" not found')
+
+        coordinates: str = featureMembers[0]["GeoObject"]["Point"]["pos"]
         longitude, latitude = tuple(coordinates.split(" "))
         return float(longitude), float(latitude)
 
