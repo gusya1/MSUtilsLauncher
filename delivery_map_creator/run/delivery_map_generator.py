@@ -5,13 +5,14 @@ import ya_geocoder
 from MSApi import MSApi, MSApiException, Expand, CustomerOrder
 from django.core.files.base import ContentFile
 
-from .settings import get_delivery_map_generator_settings
 from ..AutocleanStorage import autoclean_default_storage
-from moy_sklad_utils import filters, auth
+from moy_sklad_utils import filters
 from moy_sklad_utils.custom_entity_utils import find_custom_entity, get_entity_element_names
 from ya_geocoder.client import Client
 from ya_geocoder.exceptions import NothingFonudError
+from moy_sklad_settings.utils import get_moy_sklad_token
 
+from delivery_map_creator.models import DeliveryMapGeneratorSettings
 
 class FillingOutError(RuntimeError):
     pass
@@ -143,10 +144,10 @@ class FeatureCollection:
 
 def run(date):
     try:
-        MSApi.set_access_token(auth.get_moy_sklad_token())
-        generator_settings = get_delivery_map_generator_settings()
+        MSApi.set_access_token(get_moy_sklad_token())
+        generator_settings = DeliveryMapGeneratorSettings.get_solo()
 
-        projects_blacklist = get_entity_element_names(find_custom_entity(generator_settings.projects_blacklist))
+        projects_blacklist = get_entity_element_names(find_custom_entity(generator_settings.project_blacklist_dict))
         client = authorize_yandex_maps_client(generator_settings.yandexmaps_key)
 
         color_manager = ColorManager(generator_settings.default_color, generator_settings.delivery_time_missed_color)

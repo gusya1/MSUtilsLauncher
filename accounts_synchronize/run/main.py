@@ -1,16 +1,17 @@
 from MSApi import MSApi, Filter, MSApiException, Expand, CustomerOrder, error_handler
 from MSApi import Organization
 
-from moy_sklad_utils import auth, custom_entity_utils, filters
+from moy_sklad_utils import custom_entity_utils, filters
+from moy_sklad_settings.utils import get_moy_sklad_token
 
-from .settings import get_account_synchronize_settings
+from accounts_synchronize.models import AccountsSyncronizeSettings
 
 def accounts_synchronize(date):
     try:
-        MSApi.set_access_token(auth.get_moy_sklad_token())
+        MSApi.set_access_token(get_moy_sklad_token())
 
-        settings = get_account_synchronize_settings()
-        custom_entity = custom_entity_utils.find_custom_entity(settings.states_and_accounts_entity)
+        settings = AccountsSyncronizeSettings.get_solo()
+        custom_entity = custom_entity_utils.find_custom_entity(settings.states_and_accounts_dict)
         states_and_accounts = list((entity_elem.get_name(), entity_elem.get_description())
                                    for entity_elem in custom_entity.gen_elements())
 

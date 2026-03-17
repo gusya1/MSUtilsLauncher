@@ -1,13 +1,14 @@
 from MSApi import MSApi, MSApiException, Expand, CustomerOrder, Demand
 
-from moy_sklad_utils import auth, custom_entity_utils, filters
+from moy_sklad_utils import custom_entity_utils, filters
+from moy_sklad_settings.utils import get_moy_sklad_token
 
 from .settings import get_demand_creator_settings
 
 
 def generate_demands(date):
     try:
-        MSApi.set_access_token(auth.get_moy_sklad_token())
+        MSApi.set_access_token(get_moy_sklad_token())
 
         settings = get_demand_creator_settings()
         project_blacklist = custom_entity_utils.get_entity_element_names(

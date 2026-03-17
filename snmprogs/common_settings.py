@@ -23,6 +23,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    'colorful',
+    
+    'moy_sklad_settings',
     'root',
     'processing_creator',
     'demand_creator',

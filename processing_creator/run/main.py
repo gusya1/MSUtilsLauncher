@@ -1,13 +1,14 @@
 from MSApi import MSApi, Store, Filter, MSApiException, ProcessingOrder, Expand, Processing
 
-from moy_sklad_utils import auth, custom_entity_utils, filters
+from moy_sklad_utils import custom_entity_utils, filters
+from moy_sklad_settings.utils import get_moy_sklad_token
 
 from .settings import get_processing_creator_settings
 
 
 def generate_processing(date):
     try:
-        MSApi.set_access_token(auth.get_moy_sklad_token())
+        MSApi.set_access_token(get_moy_sklad_token())
 
         settings = get_processing_creator_settings()
         processing_plan_blacklist = custom_entity_utils.get_entity_element_names(

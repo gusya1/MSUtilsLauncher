@@ -1,8 +1,9 @@
 from MSApi import Project, CustomerOrder, MSApi, \
     error_handler, MSApiException, MSApiHttpException
-
-from moy_sklad_utils import filters, auth
 from MSApi import Filter
+
+from moy_sklad_utils import filters
+from moy_sklad_settings.utils import get_moy_sklad_token
 
 from . import settings
 from map_constructor_model.feature_collection import FeatureCollection
@@ -71,7 +72,7 @@ def run(geojson_data, date):
     error_list = []
     change_list = []
     try:
-        MSApi.set_access_token(auth.get_moy_sklad_token())
+        MSApi.set_access_token(get_moy_sklad_token())
 
         settings_model = settings.read_palette()
         projects_by_color = settings_model.palette
