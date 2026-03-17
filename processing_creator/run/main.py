@@ -3,16 +3,16 @@ from MSApi import MSApi, Store, Filter, MSApiException, ProcessingOrder, Expand,
 from moy_sklad_utils import custom_entity_utils, filters
 from moy_sklad_settings.utils import get_moy_sklad_token
 
-from .settings import get_processing_creator_settings
+from processing_creator.models import ProcessingCreatorSettings 
 
 
 def generate_processing(date):
     try:
         MSApi.set_access_token(get_moy_sklad_token())
 
-        settings = get_processing_creator_settings()
+        settings = ProcessingCreatorSettings.get_solo()
         processing_plan_blacklist = custom_entity_utils.get_entity_element_names(
-            custom_entity_utils.find_custom_entity(settings.processing_plan_blacklist_entity))
+            custom_entity_utils.find_custom_entity(settings.processing_plan_blacklist_dict))
 
         for s in Store.gen_list(filters=Filter.eq('name', settings.store_name)):
             store = s
