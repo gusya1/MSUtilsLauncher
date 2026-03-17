@@ -5,10 +5,9 @@ from django.contrib.auth.decorators import permission_required
 from django.shortcuts import render
 
 from .apps import DeliveryMapLoaderConfig as App
-from .forms import GeoJsonFileChooseForm, PaletteForm
+from .forms import GeoJsonFileChooseForm
 from .run import delivery_map_loader
 from .run.projects import get_project_names
-from .run.settings import DeliveryMapPaletteSettings, read_palette, write_palette
 
 
 def make_project_name_choice(project_name: str) -> Tuple[str, str]:
@@ -25,27 +24,6 @@ def make_project_choices():
 def filter_not_empty_value(data):
     key, value = data
     return value
-
-
-def get_yandex_maps_constructor_hotbar_colors():
-    return [
-        "#82cdff",
-        "#1e98ff",
-        "#177bc9",
-        "#0e4779",
-        "#ffd21e",
-        "#ff931e",
-        "#e6761b",
-        "#ed4543",
-        "#56db40",
-        "#1bad03",
-        "#97a100",
-        "#595959",
-        "#b3b3b3",
-        "#f371d1",
-        "#b51eff",
-        "#793d0e",
-    ]
 
 
 @permission_required('root.view_post')
@@ -94,36 +72,3 @@ def get_field_value(form, field_name) -> str:
 def format_field_change(form, field_name):
     return "Изменено значение поля '{}' на '{}'".format(get_field_label(form, field_name),
                                                         get_field_value(form, field_name))
-
-
-def apply_settings(request):
-    form = PaletteForm(get_yandex_maps_constructor_hotbar_colors(), make_project_choices(), request.POST)
-    form.fill(read_palette())
-    if not form.is_valid():
-        return render(request, 'error.html', {'error': form.errors})
-
-    logging.info("Changed fields: {}".format(" ,".join(form.changed_data)))
-    settings_model = DeliveryMapPaletteSettings(
-        delivery_order_attribute_name=get_field_value(form, 'delivery_order_attribute_name'),
-        palette=dict(filter(filter_not_empty_value, form.get_color_dict())))
-    write_palette(settings_model)
-
-    changes = list(format_field_change(form, field_name) for field_name in form.changed_data)
-    return render(request, 'result.html', {'changes': changes, 'errors': []})
-
-
-@permission_required('root.view_post')
-def settings(request):
-    if request.method == 'GET':
-        form = PaletteForm(get_yandex_maps_constructor_hotbar_colors(), make_project_choices())
-        form.fill(read_palette())
-        return render(request, 'base_app_page.html',
-                      {
-                          'title': "{}: Настройки".format(App.verbose_name),
-                          'form': form,
-                          'url_target': "settings",
-                          'method': 'post',
-                          'description': 'settings_description.html'
-                      })
-    else:
-        return apply_settings(request)

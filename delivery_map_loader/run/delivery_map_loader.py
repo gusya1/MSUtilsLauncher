@@ -5,11 +5,11 @@ from MSApi import Filter
 from moy_sklad_utils import filters
 from moy_sklad_settings.utils import get_moy_sklad_token
 
-from . import settings
 from map_constructor_model.feature_collection import FeatureCollection
 from map_constructor_model.feature import Feature
 from map_constructor_model.properties import MapConstructorPointProperties
 
+from delivery_map_loader.models import DeliveryMapPaletteSettings
 
 def update_customer_order(order_id, updated_data):
     try:
@@ -74,8 +74,8 @@ def run(geojson_data, date):
     try:
         MSApi.set_access_token(get_moy_sklad_token())
 
-        settings_model = settings.read_palette()
-        projects_by_color = settings_model.palette
+        settings_model = DeliveryMapPaletteSettings.get_solo()
+        projects_by_color = {item.color: item.project for item in settings_model.palette_items.all()}
         delivery_order_attribute_name = settings_model.delivery_order_attribute_name
 
         date_filter = filters.get_one_day_filter('deliveryPlannedMoment', date)

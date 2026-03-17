@@ -23,5 +23,4 @@ from . import views
 urlpatterns = [
     path('', views.index, name='delivery_map_loader'),
     path('run', views.run, name='delivery_map_loader/run'),
-    path('settings', views.settings, name='delivery_map_loader/settings'),
 ]
