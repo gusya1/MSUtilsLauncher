@@ -17,7 +17,9 @@ import logging.config
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'cg#p$g+j9tax!#a3cup@1$8obt2_+&k3q+pmu)5%asj6yjpkag')
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1']
+ALLOWED_HOSTS = ['*']
+
+ADMINS = [('Сергей', 'serheos@gmail.com')]
 
 LOGGING = {
     'version': 1,
@@ -28,27 +30,26 @@ LOGGING = {
         },
     },
     'handlers': {
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': 'debug.log',
+        'console': {
+            'class': 'logging.StreamHandler',
             'formatter': 'standard',
+            'stream': 'ext://sys.stdout',
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
         },
     },
     'loggers': {
-        'django.request': {
-            'handlers': ['file'],
-            'level': 'DEBUG',
-        },
         'django': {
-            'handlers': ['file'],
-            'level': 'INFO',
-        },
-        'django.server': {
-            'handlers': ['file'],
-            'level': 'DEBUG',
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': True,
         },
+    },
+    'root': {
+        'handlers': ['mail_admins'],
+        'level': 'ERROR',
     },
 }
 logging.config.dictConfig(LOGGING)
