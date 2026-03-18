@@ -8,3 +8,7 @@ class ProcessingCreatorSettings(SingletonModelMixin, models.Model):
     class Meta:
         verbose_name = "Настройки создания тех.операций"
         verbose_name_plural = "Настройки создания тех.операций"
+
+        permissions = [
+            ("can_create_processing", "Может создавать тех.операции"),
+        ]

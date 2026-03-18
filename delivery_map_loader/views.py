@@ -26,7 +26,7 @@ def filter_not_empty_value(data):
     return value
 
 
-@permission_required('root.view_post')
+@permission_required('delivery_map_loader.can_load_delivery_map')
 def index(request):
     form = GeoJsonFileChooseForm()
     return render(request, 'base_app_page.html',
@@ -41,7 +41,7 @@ def index(request):
                   })
 
 
-@permission_required('root.view_post')
+@permission_required('delivery_map_loader.can_load_delivery_map')
 def run(request):
     if request.method != 'POST':
         return

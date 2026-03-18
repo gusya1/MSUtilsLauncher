@@ -7,7 +7,7 @@ from root import forms
 from .apps import AccountsSyncConfig as App
 
 
-@permission_required('root.view_post')
+@permission_required('accounts_synchronize.can_syncronize_accounts')
 def index(request):
     form = forms.DateChooseForm()
     return render(request, 'base_app_page.html',
@@ -18,7 +18,7 @@ def index(request):
                   })
 
 
-@permission_required('root.view_post')
+@permission_required('accounts_synchronize.can_syncronize_accounts')
 def run(request):
     form = forms.DateChooseForm(request.GET)
     if not form.is_valid():

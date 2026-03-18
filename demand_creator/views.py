@@ -7,7 +7,7 @@ from root import forms
 from .apps import DemandCreatorConfig as App
 
 
-@permission_required('root.view_post')
+@permission_required('demand_creator.can_create_demand')
 def index(request):
     form = forms.DateChooseForm()
     return render(request, 'base_app_page.html',
@@ -18,7 +18,7 @@ def index(request):
                   })
 
 
-@permission_required('root.view_post')
+@permission_required('demand_creator.can_create_demand')
 def run(request):
     form = forms.DateChooseForm(request.GET)
     if not form.is_valid():

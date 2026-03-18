@@ -12,3 +12,7 @@ class DeliveryMapGeneratorSettings(SingletonModelMixin, models.Model):
     class Meta:
         verbose_name = "Настройки создания карты доставки"
         verbose_name_plural = "Настройки создания карты доставки"
+
+        permissions = [
+            ("can_generate_delivery_map", "Может создавать карту доставки"),
+        ]

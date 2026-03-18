@@ -8,3 +8,7 @@ class AccountsSyncronizeSettings(SingletonModelMixin, models.Model):
     class Meta:
         verbose_name = "Настройки синхорнизации счетов"
         verbose_name_plural = "Настройки синхорнизации счетов"
+
+        permissions = [
+            ("can_syncronize_accounts", "Может синхронизировать счета"),
+        ]

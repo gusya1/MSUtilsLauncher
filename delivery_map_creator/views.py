@@ -8,7 +8,7 @@ from root import forms
 from .apps import DeliveryMapCreatorConfig as App
 
 
-@permission_required('root.view_post')
+@permission_required('delivery_map_creator.can_generate_delivery_map')
 def index(request):
     form = forms.DateChooseForm()
     return render(request, 'base_app_page.html',
@@ -19,7 +19,7 @@ def index(request):
                   })
 
 
-@permission_required('root.view_post')
+@permission_required('delivery_map_creator.can_generate_delivery_map')
 def run(request):
     form = forms.DateChooseForm(request.GET)
     if not form.is_valid():
@@ -28,7 +28,7 @@ def run(request):
     return render(request, 'download_map.html', {'errors': errors, 'download_file': file_name})
 
 
-@permission_required('root.view_post')
+@permission_required('delivery_map_creator.can_generate_delivery_map')
 def download(request):
     download_file = request.GET.get("file_name")
     if not download_file:

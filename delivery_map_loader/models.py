@@ -10,6 +10,10 @@ class DeliveryMapPaletteSettings(SingletonModelMixin, models.Model):
         verbose_name = "Настройки палитры для выгрузки карты доставки"
         verbose_name_plural = "Настройки палитры для выгрузки карты доставки"
 
+        permissions = [
+            ("can_load_delivery_map", "Может загружать карту доставки"),
+        ]
+
 
 def get_yandex_maps_constructor_hotbar_colors():
     return [

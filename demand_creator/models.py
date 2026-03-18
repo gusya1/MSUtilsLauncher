@@ -7,3 +7,7 @@ class DemandCreatorSettings(SingletonModelMixin, models.Model):
     class Meta:
         verbose_name = "Настройки создания отгрузок"
         verbose_name_plural = "Настройки создания отгрузок"
+
+        permissions = [
+            ("can_create_demand", "Может создавать отгрузки"),
+        ]
