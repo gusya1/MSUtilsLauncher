@@ -43,12 +43,12 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'level': 'INFO',
             'propagate': True,
         },
     },
     'root': {
-        'handlers': ['mail_admins'],
+        'handlers': ['mail_admins', 'console'],
         'level': 'ERROR',
     },
 }

@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'accounts_synchronize',
     'delivery_map_creator',
     'delivery_map_loader',
+    'delivey_distributor',
 ]
 
 MIDDLEWARE = [
