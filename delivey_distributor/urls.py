@@ -20,6 +20,10 @@ from django.urls import path
 
 from . import views
 
+app_name = 'delivey_distributor'
+
 urlpatterns = [
-    path('', views.IndexView.as_view(), name='delivey_distributor'),
+    path('', views.IndexView.as_view(), name='index'),
+    path('orders', views.OrderDetailsView.as_view(), name='orders'),
+    path('couriers', views.CourierDetailsView.as_view(), name='couriers'),
 ]

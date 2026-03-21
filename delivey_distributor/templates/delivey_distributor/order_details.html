@@ -1,0 +1,16 @@
+{% extends "base_form_page.html" %}
+
+{% block form_content %}
+{% if formset.non_form_errors %}
+<div class="alert alert-danger">
+    {{ formset.non_form_errors }}
+</div>
+{% endif %}
+<table class="table w-100">
+    {% include "partials/formset.html" %}
+</table>
+<div class="d-flex justify-content-end">
+    <button class="btn" name="action" value="save" type="submit">Обновить</button>
+</div>
+<button class="btn btn-primary"name="action"  value="next" type="submit">Далее</button>
+{% endblock  %}

@@ -46,6 +46,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'delivey_distributor': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
     'root': {
         'handlers': ['mail_admins', 'console'],

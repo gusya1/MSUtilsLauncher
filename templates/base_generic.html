@@ -1,53 +1,43 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   {% block title %}<title>SNM Script launcher</title>{% endblock %}
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   {% block header_script %}
   {% endblock %}
 
-  {% load static %}
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 
 <body>
-  <div class="container-fluid">
+  <div class="container">
     <div class="row">
-      <div class="col-sm-2"></div>
-      <div class="col-sm-8">
+      <div class="col-lg-10">
         <h1><a class="text-decoration-none text-reset" href="/">S.O.B.A.K.A.N.A.M.Y.A.S.E</a></h1>
         <p>Добро пожаловать в SNM Script launcher</p>
       </div>
-      <div class="col-sm-2"></div>
+      <div class="col-lg-2">
+        <div class="m-4">
+          {% if user.is_authenticated %}
+            <p>Приевет, {{ user.get_username }}. </p>
+            <p>Спасибо что зашёл)</p>
+            <p><a href="{% url 'logout' %}">Выход</a></p>
+          {% else %}
+            <p>Ты это, заходи если что.</p>
+            <p><a href="{% url 'login' %}">Вход</a></p>
+          {% endif %}
+        </div>
+      </div>
     </div>
     <div class="row">
-      <div class="col-sm-2"></div>
-      <div class="col-sm-6 ">
       {% block content %}{% endblock %}
-      </div>
-      <div class="col-sm-2">
-        {% if user.is_authenticated %}
-          <p>Приевет, {{ user.get_username }}. </p>
-          <p>Спасибо что зашёл)</p>
-          <p><a href="{% url 'logout' %}">Выход</a></p>
-        {% else %}
-          <p>Ты это, заходи если что.</p>
-          <p><a href="{% url 'login' %}">Вход</a></p>
-        {% endif %}
-      </div>
-      <div class="col-sm-2">
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-sm-2"></div>
-      <div class="col-sm-8 "><div style="height:200px" ></div></div>
-      <div class="col-sm-2">
-      </div>
     </div>
   </div>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

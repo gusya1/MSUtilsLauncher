@@ -1,27 +1,29 @@
 {% extends "base_generic.html" %}
 
 {% block content %}
-<table>
-  <tr>
-    <td>
-      <h2>{{ title }}</h2>
-    </td>
-  </tr>
-</table>
-  <div class="col-sm-6">
-    <form method={{ method|default:"get" }} action={{ url_target }}>
-    {% csrf_token %}
-    <table>
-      {{ form.as_table }}
-    </table>
-    <input type="submit">
+<div class="row mb-4">
+  <h2>{{ title }}</h2>
+  <h3>{{ subtitle }}</h3>
+</div>
+<div class="row mb-4">
+  {% block top_content %}
+  {% endblock  %}
+</div>
+<div class="row mb-4">
+  <div class="col">
+    <form method="post">
+      {% csrf_token %}
+      {% block form_content %}
+      <table>
+        {{ form.as_table }}
+      </table>
+      <input class="btn" type="submit"></input>
+      {% endblock  %}
     </form>
   </div>
-  <div class="col-sm-6">
-    {% if description is not None %}
-    {% include description %}
-    {% endif %}
-  </div>
-
-
+</div>
+<div class="row mb-4">
+  {% block bottom_content %}
+  {% endblock %}
+</div>
 {% endblock %}

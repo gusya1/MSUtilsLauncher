@@ -20,7 +20,7 @@ class MoscowDateTime(datetime):
             cls.validate,
             serialization=core_schema.plain_serializer_function_ser_schema(
                 cls.serialize,
-                when_used='json',
+                when_used='always',
             )
         )
     
@@ -28,7 +28,10 @@ class MoscowDateTime(datetime):
     def validate(cls, value, info) -> 'MoscowDateTime':
         if isinstance(value, str):
             # Парсим только ваш формат
-            dt = datetime.strptime(value, '%Y-%m-%d %H:%M:%S.%f')
+            try:
+                dt = datetime.strptime(value, '%Y-%m-%d %H:%M:%S.%f')
+            except ValueError:
+                dt = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
         elif isinstance(value, datetime):
             dt = value
         else:
@@ -186,6 +189,12 @@ class MoySkladAttributesMixin(BaseModel):
                 return attr
         return None
     
+    def find_attribute_by_name(self, attr_name):
+        for attr in self.attributes:
+            if attr.name == attr_name:
+                return attr
+        return None
+    
     def get_attribute_value(self, attr_id: UUID):
         attr = self.find_attribute(attr_id)
         if not attr:
@@ -324,17 +333,16 @@ class MoySkladOrderPosition(BaseModel):
     quantity: float
     discount: DiscountFactor | None = None
 
-class MoySkladCustomerOrderBase(BaseModel):
+class MoySkladCustomerOrderBase(MoySkladAttributesMixin, BaseModel):
     agent: MoySkladMetaField
     organization: MoySkladMetaField
-    state: MoySkladMetaField = None
-    name: str = None
+    state: MoySkladMetaField | None = None
+    name: str | None = None
     shipmentAddress: str = ""
-    deliveryPlannedMoment: MoscowDateTime = None
-    attributes: list[MoySkladAttribute] = []
-    project: MoySkladMetaField = None
-    positions: MoySkladMetaField = None
-    store: MoySkladMetaField = None
+    deliveryPlannedMoment: MoscowDateTime | None = None
+    project: MoySkladMetaField | None = None
+    positions: MoySkladMetaField | None = None
+    store: MoySkladMetaField | None = None
 
 class MoySkladCustomerOrderResponse(BaseModel):
     id: UUID
