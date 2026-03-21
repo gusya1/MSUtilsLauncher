@@ -1,10 +1,10 @@
+import json
 import logging
-from os import name
 from venv import logger
 
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
-from django.views.generic import FormView
+from django.views.generic import FormView, TemplateView
 
 from extra_views import FormSetView
 
@@ -14,10 +14,14 @@ from moy_sklad import model
 from moy_sklad.client import MoySkladClient
 from moy_sklad.utils import format_moy_sklad_datetime
 
+from .core.solution_processor import extract_solution, print_routes
+from .core.delivery_data_preparator import create_data_model
+from .core.solver import solve_vrp
 from .core.time_intervals_identifier import parse_time_interval_safety
-from .core.data_structures import OrderData
+from .core.data_structure import CourierData, OrderData, Point
 from .apps import DeliveyDistributorConfig
-from .forms import DateChooseForm, OrderForm
+from .forms import CourierForm, DateChooseForm, OrderForm
+from .models import Courier, DeliveryRoutingSettings, Location
 
 logger = logging.getLogger("delivey_distributor")
 
@@ -49,6 +53,13 @@ class DeliveryRutingSessionMixin:
 
     def get_orders(self):
         return [OrderData.model_validate_json(data) for data in self.request.session.get(self.root_key, {}).get("orders", [])]
+    
+    def set_couriers(self, couriers: list[CourierData]):
+        self.request.session.setdefault(self.root_key, {})["couriers"] = [courier.model_dump_json() for courier in couriers]
+        self.request.session.modified = True
+    
+    def get_couriers(self):
+        return [CourierData.model_validate_json(data) for data in self.request.session.get(self.root_key, {}).get("couriers", [])]
 
 
 # Create your views here.
@@ -94,7 +105,7 @@ class IndexView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
     
 
 class OrderDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
-    template_name = 'delivey_distributor/order_details.html'
+    template_name = 'delivey_distributor/formset_page.html'
     form_class = OrderForm
     subtitle = "Детали заказов"
     success_url = reverse_lazy("delivey_distributor:couriers")
@@ -110,7 +121,6 @@ class OrderDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
         self.set_orders(new_data)
 
         action = self.request.POST.get("action")
-        logger.info(action)
         if action == "save":
             return redirect(self.request.path)
         return super().formset_valid(formset)
@@ -118,11 +128,75 @@ class OrderDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
     def __get_order_form_initial_data(self, order: OrderData):
         return order.model_dump()
     
+def make_point_by_location(location: Location):
+    return Point(longitude=location.longitude, latitude=location.latitude)
+
 class CourierDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
-    template_name = 'delivey_distributor/order_details.html'
-    form_class = OrderForm
-    subtitle = "Детали курьекров"
-    success_url = reverse_lazy("delivey_distributor:couriers")
+    template_name = 'delivey_distributor/formset_page.html'
+    form_class = CourierForm
+    subtitle = "Детали курьеров"
+    success_url = reverse_lazy("delivey_distributor:process")
     factory_kwargs = {'extra': 2, 'max_num': None, 'can_order': False, 'can_delete': True}
 
+    def get_initial(self):
+        couriers = self.get_couriers()
+        if not couriers:
+            self.set_couriers(self.__get_couriers_by_settings())
+            couriers = self.get_couriers()
+            
+        data = []
+        for courier in couriers:
+            data.append({
+                "name": courier.name,
+                "use_home_location": courier.end is not None,
+                "capacity": courier.capacitiy
+            })
+            
+        return data
+
+    def formset_valid(self, formset):
+        new_data = list(self.__get_courier_by_form_data(data) for data in formset.cleaned_data if data and not data.get('DELETE', False))
+        self.set_couriers(new_data)
+
+        action = self.request.POST.get("action")
+        if action == "save":
+            return redirect(self.request.path)
+        return super().formset_valid(formset)
+
+    def __get_courier_by_form_data(self, data):
+        settings = DeliveryRoutingSettings.get_solo()
+        courier = Courier.objects.get(name=data.get("name"))
+        return CourierData(name=data["name"], 
+                           start=make_point_by_location(settings.store_location), 
+                           end=make_point_by_location(courier.home_location) if data["use_home_location"] and courier else None,
+                           capacitiy=data["capacity"])
+
+    def __get_couriers_by_settings(self):
+        settings = DeliveryRoutingSettings.get_solo()
+        couriers_settings = settings.couriers.all()
+        couriers = []
+        for courier_settings in couriers_settings:
+            courier_settings: Courier
+            couriers.append(CourierData(name=courier_settings.name, 
+                                        start=make_point_by_location(settings.store_location), 
+                                        end=make_point_by_location(courier_settings.home_location),
+                                        capacitiy=courier_settings.capacity))
+        return couriers
     
+class ProcessView(AppViewMixin, DeliveryRutingSessionMixin, TemplateView):
+    template_name = 'delivey_distributor/result_page.html'
+    subtitle = "Результат"
+
+    def get(self, request, *args, **kwargs):
+        orders = self.get_orders()
+        # fill geocoder
+        couriers = self.get_couriers()
+        data = create_data_model(orders, couriers)
+        solution, manager, routing = solve_vrp(data)
+        if solution:
+            results = extract_solution(solution, manager, routing, orders, couriers)
+            print_routes(results, orders)
+        else:
+            print("Решение не найдено!")
+
+        return super.get(request)
