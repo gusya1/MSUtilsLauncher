@@ -1,0 +1,10 @@
+.idea
+venv
+__pycache__
+snmprogs/snmprogs/settings.py
+db.sqlite3
+debug.log
+public_html
+logs
+tmp
+settings.json

@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:14
+    container_name: snmprogs_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    restart: unless-stopped
+  snmprogs_web:
+    build: ./web
+    container_name: snmprogs_web
+    volumes:
+      - ./site:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+    env_file:
+      - .env
+    environment:
+      - TZ=Europe/Moscow
+    restart: unless-stopped
