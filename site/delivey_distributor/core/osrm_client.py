@@ -1,5 +1,7 @@
 import requests
 
+from django.conf import settings
+
 from .data_structure import Point
 
 
@@ -9,7 +11,7 @@ def compute_time_matrix(points: list[Point]) -> list[list[float]]:
     используя OSRM (http://localhost:5000).
     """
     coords = ";".join(f"{p.longitude},{p.latitude}" for p in points)
-    url = f"http://localhost:5000/table/v1/driving/{coords}"
+    url = f"{settings.OSRM_URL}/table/v1/driving/{coords}"
     
     response = requests.get(url)
     data = response.json()

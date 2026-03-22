@@ -226,4 +226,4 @@ class ProcessView(AppViewMixin, DeliveryRutingSessionMixin, TemplateView):
         else:
             print("Решение не найдено!")
 
-        return super.get(request)
+        return super().get(request, *args, **kwargs)

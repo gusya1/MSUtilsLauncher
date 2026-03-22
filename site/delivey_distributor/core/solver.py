@@ -1,6 +1,10 @@
+import logging
 from ortools.constraint_solver import routing_enums_pb2, pywrapcp
 
+logger = logging.getLogger("delivey_distributor")
+
 def add_time_dimension(routing, manager, data):
+    logger.debug("add_time_dimension")
     def time_callback(from_index, to_index):
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
@@ -23,7 +27,7 @@ def add_time_dimension(routing, manager, data):
         False,  # не заставлять суммировать время от начала (start cumul to zero)
         'Time')
     time_dimension = routing.GetDimensionOrDie('Time')
-    
+
     for node_idx, (window_start, window_end) in enumerate(data['time_windows']):
         if window_start is not None and window_end is not None:
             index = manager.NodeToIndex(node_idx)
@@ -38,10 +42,14 @@ def add_time_dimension(routing, manager, data):
         time_dimension.CumulVar(start_index).SetRange(start, end)
         time_dimension.CumulVar(end_index).SetRange(start, end)
 
-        time_dimension.SetSpanUpperBoundForVehicle(data['work_hours'], vehicle_id)
+        bound_cost = pywrapcp.BoundCost(data['work_hours'], 10)
+        time_dimension.SetSoftSpanUpperBoundForVehicle(bound_cost, vehicle_id)
+        time_dimension.SetCumulVarSoftLowerBound(end_index, start, 1000)
+        time_dimension.SetCumulVarSoftUpperBound(end_index, end, 1000)
 
 
 def add_capacity_dimension(routing, manager, data):
+    logger.debug("add_capacity_dimension")
     def demand_callback(from_index):
         from_node = manager.IndexToNode(from_index)
         return data['demands'][from_node]
@@ -56,6 +64,7 @@ def add_capacity_dimension(routing, manager, data):
     
 
 def solve_vrp(data):
+    logger.debug("solve_vrp")
     manager = pywrapcp.RoutingIndexManager(
         len(data['time_matrix']), 
         data['num_vehicles'], 
@@ -73,6 +82,8 @@ def solve_vrp(data):
     search_parameters.local_search_metaheuristic = (
         routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
     search_parameters.time_limit.seconds = 30  # лимит времени на поиск
-    
+    search_parameters.log_search = True
+
+    logger.debug("SolveWithParameters")
     solution = routing.SolveWithParameters(search_parameters)
     return solution, manager, routing

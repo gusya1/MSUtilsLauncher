@@ -11,8 +11,10 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 from .common_settings import * # noqa: F403
 
 import os
-import logging.config
 
+
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(PROJECT_DIR)
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'cg#p$g+j9tax!#a3cup@1$8obt2_+&k3q+pmu)5%asj6yjpkag')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
@@ -57,7 +59,6 @@ LOGGING = {
         'level': 'ERROR',
     },
 }
-logging.config.dictConfig(LOGGING)
 
 
 DATABASES = {
@@ -66,3 +67,7 @@ DATABASES = {
         'NAME': 'db.sqlite3',
     }
 }
+
+YANDEX_MAPS_API_KEY = os.environ.get('YANDEX_MAPS_API_KEY', None)
+
+OSRM_URL = os.environ.get('OSRM_URL', 'http://osrm:5000')

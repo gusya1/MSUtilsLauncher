@@ -1,11 +1,12 @@
+from django.conf import settings
 from yandex_geocoder.client import Client
 from yandex_geocoder.exceptions import NothingFonudError
 
-from .models import YandexGeocoderSettings, Location
+from .models import Location
 
 class Geocoder:
     def __init__(self):
-        self.client = Client(YandexGeocoderSettings.get_solo().api_token)
+        self.client = Client(settings.YANDEX_MAPS_API_KEY)
 
     def geocode(self, address):
         if not address:

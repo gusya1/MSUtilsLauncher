@@ -1,7 +1,6 @@
 import json
 import logging
 
-import ya_geocoder
 from MSApi import MSApi, MSApiException, Expand, CustomerOrder
 from django.core.files.base import ContentFile
 
