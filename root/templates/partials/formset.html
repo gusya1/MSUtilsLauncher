@@ -24,11 +24,11 @@
         <td>
 
             {% if field.errors %}
-            {{ field }}
+                {{ field }}
 
-            <div class="invalid-feedback d-block">
-                {{ field.errors|striptags }}
-            </div>
+                <div class="invalid-feedback d-block">
+                    {{ field.errors|striptags }}
+                </div>
 
             {% else %}
                 {{ field }}

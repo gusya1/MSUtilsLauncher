@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from venv import logger
 
 from django.shortcuts import redirect, render
@@ -7,12 +8,16 @@ from django.urls import reverse_lazy
 from django.views.generic import FormView, TemplateView
 
 from extra_views import FormSetView
+from numpy import add
 
 from moy_sklad_settings.utils import get_moy_sklad_token
 from moy_sklad import getters
 from moy_sklad import model
 from moy_sklad.client import MoySkladClient
 from moy_sklad.utils import format_moy_sklad_datetime
+
+from yandex_geocoder.geocoder import Geocoder
+from yandex_geocoder.models import Location
 
 from .core.solution_processor import extract_solution, print_routes
 from .core.delivery_data_preparator import create_data_model
@@ -21,7 +26,7 @@ from .core.time_intervals_identifier import parse_time_interval_safety
 from .core.data_structure import CourierData, OrderData, Point
 from .apps import DeliveyDistributorConfig
 from .forms import CourierForm, DateChooseForm, OrderForm
-from .models import Courier, DeliveryRoutingSettings, Location
+from .models import Courier, DeliveryRoutingSettings
 
 logger = logging.getLogger("delivey_distributor")
 
@@ -60,7 +65,13 @@ class DeliveryRutingSessionMixin:
     
     def get_couriers(self):
         return [CourierData.model_validate_json(data) for data in self.request.session.get(self.root_key, {}).get("couriers", [])]
+    
+    def reset_session(self):
+        self.request.session[self.root_key] = {}
+        self.request.session.modified = True
 
+def make_point_by_location(location: Location):
+    return Point(longitude=location.longitude, latitude=location.latitude)
 
 # Create your views here.
 class IndexView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
@@ -70,25 +81,27 @@ class IndexView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
     subtitle = "Выберите день доставки"
     
     def form_valid(self, form):
+        self.reset_session()
         client = MoySkladClient(get_moy_sklad_token())
-        
+        geocoder = Geocoder()
         project_filters = ["project!={}".format(project.meta.href) for project in self.__get_projects(client, projects_blacklist)]
         date_filter = "deliveryPlannedMoment={}".format(format_moy_sklad_datetime(form.cleaned_data['date']))
         filter = ";".join(project_filters + [date_filter])
-        logger.info(filter)
         orders = getters.walk_for_all(client, model.MoySkladCustomerOrder, filter=filter)
-        order_data = [self.__get_order_data(order) for order in orders]
+        order_data = [self.__get_order_data(order, geocoder) for order in orders]
         self.set_orders(order_data)
-        logger.info("Found {} orders".format(len(order_data)))
         return super().form_valid(form)
     
-    def __get_order_data(self, order: model.MoySkladCustomerOrder):
+    def __get_order_data(self, order: model.MoySkladCustomerOrder, geocoder: Geocoder):
         delivery_time = order.find_attribute_by_name('Время доставки') # TODO mode to settings
         delivery_time = delivery_time.value if delivery_time else ""
         start_time, end_time = parse_time_interval_safety(delivery_time)
+        address = order.shipmentAddress
+        location = geocoder.geocode(address)
+        point = make_point_by_location(location) if location else None
         return OrderData(
             name=order.name,
-            point=None,
+            point=point,
             address=order.shipmentAddress,
             weight=10, # TODO add real data
             start_time=start_time,
@@ -111,6 +124,15 @@ class OrderDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
     success_url = reverse_lazy("delivey_distributor:couriers")
     factory_kwargs = {'extra': 2, 'max_num': None, 'can_order': False, 'can_delete': True}
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.geocoder = Geocoder()
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["geocoder"] = self.geocoder
+        return kwargs
+
     def get_initial(self):
       orders = self.get_orders()
       data = [self.__get_order_form_initial_data(order) for order in orders]
@@ -126,10 +148,9 @@ class OrderDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
         return super().formset_valid(formset)
 
     def __get_order_form_initial_data(self, order: OrderData):
-        return order.model_dump()
-    
-def make_point_by_location(location: Location):
-    return Point(longitude=location.longitude, latitude=location.latitude)
+        data = order.model_dump()
+        data["has_coords"] = order.point is not None
+        return data
 
 class CourierDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
     template_name = 'delivey_distributor/formset_page.html'
@@ -155,7 +176,7 @@ class CourierDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
         return data
 
     def formset_valid(self, formset):
-        new_data = list(self.__get_courier_by_form_data(data) for data in formset.cleaned_data if data and not data.get('DELETE', False))
+        new_data = list(self.__get_courier_by_form_data(data, formset[i]) for i, data in enumerate(formset.cleaned_data) if data and not data.get('DELETE', False))
         self.set_couriers(new_data)
 
         action = self.request.POST.get("action")
@@ -163,12 +184,18 @@ class CourierDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
             return redirect(self.request.path)
         return super().formset_valid(formset)
 
-    def __get_courier_by_form_data(self, data):
-        settings = DeliveryRoutingSettings.get_solo()
-        courier = Courier.objects.get(name=data.get("name"))
+    def __get_courier_by_form_data(self, data, form):
+        settings: DeliveryRoutingSettings = DeliveryRoutingSettings.get_solo()
+        use_home_location = data["use_home_location"]
+        try:
+            courier = Courier.objects.get(name=data.get("name"))
+        except Courier.DoesNotExist:
+            courier = None
+        if use_home_location and (courier is None or courier.home_location is None):
+                form.add_error("use_home_location", "Нельзя установить домашнюю локацию для этого курьера")
         return CourierData(name=data["name"], 
                            start=make_point_by_location(settings.store_location), 
-                           end=make_point_by_location(courier.home_location) if data["use_home_location"] and courier else None,
+                           end=make_point_by_location(courier.home_location) if use_home_location and courier else None,
                            capacitiy=data["capacity"])
 
     def __get_couriers_by_settings(self):

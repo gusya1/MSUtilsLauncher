@@ -8,8 +8,8 @@ from django.core.files.base import ContentFile
 from ..AutocleanStorage import autoclean_default_storage
 from moy_sklad_utils import filters
 from moy_sklad_utils.custom_entity_utils import find_custom_entity, get_entity_element_names
-from ya_geocoder.client import Client
-from ya_geocoder.exceptions import NothingFonudError
+from yandex_geocoder.client import Client
+from yandex_geocoder.exceptions import NothingFonudError
 from moy_sklad_settings.utils import get_moy_sklad_token
 
 from delivery_map_creator.models import DeliveryMapGeneratorSettings

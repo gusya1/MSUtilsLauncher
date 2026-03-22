@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from moy_sklad_settings.models import MoySkladSettings
+from .models import MoySkladSettings
 
 @admin.register(MoySkladSettings)
 class MoySkladSettingsAdmin(admin.ModelAdmin):

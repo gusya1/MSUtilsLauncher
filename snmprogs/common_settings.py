@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'colorful',
     
     'moy_sklad_settings',
+    'yandex_geocoder',
     'root',
     'processing_creator',
     'demand_creator',

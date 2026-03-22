@@ -1,10 +1,7 @@
 from django.contrib import admin
 
-from .models import DeliveryRoutingSettings, Courier, Location
+from .models import DeliveryRoutingSettings, Courier
 
-@admin.register(Location)
-class LocationAdmin(admin.ModelAdmin):
-    pass
 
 class PaletteItemInline(admin.TabularInline):
     model = Courier
