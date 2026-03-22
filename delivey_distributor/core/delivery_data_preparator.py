@@ -10,13 +10,13 @@ def prepare_points(orders: list[OrderData], couriers: list[CourierData]) -> list
     """
     points = []
     for order in orders:
-        points.append(Point(order.longitude, order.latitude))
+        points.append(order.point)
 
     for courier in couriers:
-        points.append(Point(courier.start.longitude, courier.start.latitude))
+        points.append(courier.start)
 
     for courier in couriers:
-        points.append(Point(courier.end.longitude, courier.end.latitude))
+        points.append(courier.end)
     
     return points
 
