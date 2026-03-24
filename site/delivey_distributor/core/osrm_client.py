@@ -25,5 +25,5 @@ def compute_time_matrix(points: list[Point]) -> list[list[float]]:
     # Убедимся, что это квадратная матрица нужного размера
     if len(durations) != len(points) or any(len(row) != len(points) for row in durations):
         raise ValueError("OSRM вернул матрицу неверного размера")
-    
+
     return durations

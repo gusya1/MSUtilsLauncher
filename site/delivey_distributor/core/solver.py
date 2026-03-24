@@ -81,8 +81,8 @@ def solve_vrp(data):
         routing_enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION)
     search_parameters.local_search_metaheuristic = (
         routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
-    search_parameters.time_limit.seconds = 30  # лимит времени на поиск
-    search_parameters.log_search = True
+    search_parameters.time_limit.seconds = 20  # лимит времени на поиск
+    # search_parameters.log_search = True
 
     logger.debug("SolveWithParameters")
     solution = routing.SolveWithParameters(search_parameters)

@@ -27,4 +27,5 @@ urlpatterns = [
     path('orders', views.OrderDetailsView.as_view(), name='orders'),
     path('couriers', views.CourierDetailsView.as_view(), name='couriers'),
     path('process', views.ProcessView.as_view(), name='process'),
+    path('get-routes', views.GetGeojsonRoutesView.as_view(), name='get_routes'),
 ]

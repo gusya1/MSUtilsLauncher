@@ -5,7 +5,8 @@ from venv import logger
 
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
-from django.views.generic import FormView, TemplateView
+from django.views.generic import FormView, TemplateView, View
+from django.http import JsonResponse
 
 from extra_views import FormSetView
 from numpy import add
@@ -19,7 +20,7 @@ from moy_sklad.utils import format_moy_sklad_datetime
 from yandex_geocoder.geocoder import Geocoder
 from yandex_geocoder.models import Location
 
-from .core.solution_processor import extract_solution, print_routes
+from .core.solution_processor import export_route_points, export_routes_lines_to_geojson, extract_solution, make_context
 from .core.delivery_data_preparator import create_data_model
 from .core.solver import solve_vrp
 from .core.time_intervals_identifier import parse_time_interval_safety
@@ -65,6 +66,13 @@ class DeliveryRutingSessionMixin:
     
     def get_couriers(self):
         return [CourierData.model_validate_json(data) for data in self.request.session.get(self.root_key, {}).get("couriers", [])]
+    
+    def set_results(self, results: list):
+        self.request.session.setdefault(self.root_key, {})["results"] = results
+        self.request.session.modified = True
+    
+    def get_results(self):
+        return self.request.session.get(self.root_key, {}).get("results", [])
     
     def reset_session(self):
         self.request.session[self.root_key] = {}
@@ -221,9 +229,29 @@ class ProcessView(AppViewMixin, DeliveryRutingSessionMixin, TemplateView):
         data = create_data_model(orders, couriers)
         solution, manager, routing = solve_vrp(data)
         if solution:
-            results = extract_solution(solution, manager, routing, orders, couriers)
-            print_routes(results, orders)
+            self.set_results(extract_solution(solution, manager, routing, orders, couriers))
         else:
             print("Решение не найдено!")
 
         return super().get(request, *args, **kwargs)
+
+    def get_context_data(self,*args, **kwargs):
+        context = super().get_context_data(*args,**kwargs)
+        orders = self.get_orders()
+        results = self.get_results()
+        if results:
+            context.update(make_context(results, orders))
+        return context
+    
+class GetGeojsonRoutesView(DeliveryRutingSessionMixin, View):
+    template_name = 'delivey_distributor/result_page.html'
+    subtitle = "Результат"
+
+    def get(self, request, *args, **kwargs):
+        results = self.get_results()
+        orders = self.get_orders()
+        couriers = self.get_couriers()
+        return JsonResponse({
+            "routes": export_routes_lines_to_geojson(results, orders, couriers),
+            "points": export_route_points(results, orders, couriers),
+        })

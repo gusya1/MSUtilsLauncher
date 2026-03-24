@@ -1,12 +1,51 @@
 {% extends "base_generic.html" %}
 
-{% block content %}
-<div>
-    <a href="{% url "delivey_distributor:orders" %}">Назад к заказам</a>
-    <a href="{% url "delivey_distributor:couriers" %}">Назад к курьерам</a>
-</div>
+{% load yandex_maps_tags %}
+{% load static %}
 
-<div>
-    
+{% block content %}
+<div class="row mb-4">
+    <p>
+        <a href="{% url "delivey_distributor:orders" %}">Назад к заказам</a>
+        <- <a href="{% url "delivey_distributor:couriers" %}">Назад к курьерам</a>
+    </p>
+</div>
+<div class="row mb-4">
+    <div id="map" style="width: 100%; height: 400px;"></div>
+</div>
+<div class="row mb-4">
+    {% for courier in couriers %}
+    <h4>{{ courier.name }}</h4>
+    <p>Начало маршрута: {{ courier.start_time }}</p>
+    <p>Конец маршрута: {{ courier.end_time }}</p>
+    <p>Длительность маршрута: {{ courier.span_time }} часов</p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Адрес</th>
+                <th scope="col">Время прибытия</th>
+                <th scope="col">Окно доставки</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in courier.orders %}
+            <tr>
+                <th scope="row">{{ forloop.counter }}</th>
+                <td>{{ order.address }}</td>
+                <td>{{ order.arrival_time }}</td>
+                <td>{{ order.window_start }} - {{ order.window_end }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endfor %}
 </div>
 {% endblock  %}
+
+{% block extra_js %}
+    {% yandex_maps_on_load_script %}
+    <script src="{% static "yandex_map/js/yandex_map.js" %}"></script>
+    <script>get_routes_url = "{% url "delivey_distributor:get_routes" %}"; </script>
+    <script src="{% static "delivey_distributor/js/load_routes.js" %}"></script>
+{% endblock %}

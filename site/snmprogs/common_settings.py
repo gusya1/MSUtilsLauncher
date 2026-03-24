@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'delivery_map_creator',
     'delivery_map_loader',
     'delivey_distributor',
+    'yandex_map',
 ]
 
 MIDDLEWARE = [

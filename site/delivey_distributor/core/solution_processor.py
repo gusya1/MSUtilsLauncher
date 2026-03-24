@@ -78,7 +78,35 @@ def print_routes(results, orders):
             print(f"     Время прибытия: {arrival_time.strftime('%H:%M')}")
             print(f"     Окно доставки: {window_start.strftime('%H:%M')} - {window_end.strftime('%H:%M')}")
 
-def export_routes_to_geojson(results: list[dict], orders: list[OrderData], couriers: list[CourierData]) -> dict[str, object]:
+def make_context(results, orders):
+    context = {}
+    context["couriers"] = []
+    for res in results:
+        courier = {
+            "name": res['courier_name'],
+            "start_time": datetime.timedelta(seconds=res['start_time_seconds']),
+            "end_time": datetime.timedelta(seconds=res['end_time_seconds']),
+            "span_time": datetime.timedelta(seconds=res['span_time_seconds']),
+        }
+        courier["orders"] = []
+        for idx, order_node in enumerate(res['order_indices']):
+            order = orders[order_node]
+            arrival = res['arrival_times_seconds'][idx]
+            arrival_time = seconds_to_time(arrival)
+            window_start = order.start_time
+            window_end = order.end_time
+            courier["orders"].append({
+                "address": order.address,
+                "arrival_time": arrival_time,
+                "window_start": window_start,
+                "window_end": window_end,
+            })
+        context["couriers"].append(courier)
+    return context
+
+colors = ["#FF0000", "#00FF00", "#0000FF", "#800080", "#FFC0CB", "#00FFFF"]
+
+def export_routes_lines_to_geojson(results: list[dict], orders: list[OrderData], couriers: list[CourierData]) -> dict[str, object]:
     """
     Преобразует маршруты в GeoJSON FeatureCollection.
     Возвращает словарь, который можно сохранить как JSON.
@@ -92,13 +120,9 @@ def export_routes_to_geojson(results: list[dict], orders: list[OrderData], couri
 
     features = []
 
-    # Цвета для курьеров (можно сделать по выбору)
-    colors = ["#FF0000", "#00FF00", "#0000FF", "#FFA500", "#800080", "#FFC0CB", "#00FFFF", "#FFD700"]
-
     # 1. Линии маршрутов
     for res in results:
         courier_id = res['courier_id']
-        courier_name = res['courier_name']
         order_indices = res['order_indices']
 
         # Координаты линии: старт -> заказы -> финиш
@@ -114,81 +138,17 @@ def export_routes_to_geojson(results: list[dict], orders: list[OrderData], couri
         line_coords.append([all_points[end_node].longitude, all_points[end_node].latitude])
 
         features.append({
+            "id": len(features),
             "type": "Feature",
             "geometry": {
                 "type": "LineString",
                 "coordinates": line_coords
             },
+            "style": {
+                "stroke": [{"width": 2, "color": colors[courier_id % len(colors)]}],
+            },
             "properties": {
                 "type": "route",
-                "courier": courier_name,
-                "stroke": colors[courier_id % len(colors)],
-                "total_time_seconds": res['span_time_seconds']
-            }
-        })
-
-    # 2. Точки заказов
-    # Для быстрого доступа к времени прибытия по индексу заказа создадим словарь
-    order_arrival = {}
-    for res in results:
-        for order_idx, arrival_sec in zip(res['order_indices'], res['arrival_times_seconds']):
-            order_arrival[order_idx] = arrival_sec
-
-    for order_idx, order in enumerate(orders):
-        arrival_sec = order_arrival.get(order_idx)
-        arrival_str = ""
-        if arrival_sec is not None:
-            arrival_time = seconds_to_time(arrival_sec)
-            arrival_str = arrival_time.strftime("%H:%M")
-        else:
-            arrival_str = "не назначен"
-
-        features.append({
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [order.longitude, order.latitude]
-            },
-            "properties": {
-                "type": "order",
-                "address": order.address,
-                "time_window": f"{order.start_time.strftime('%H:%M')} - {order.end_time.strftime('%H:%M')}",
-                "arrival_time": arrival_str,
-                "color": "#888888"
-            }
-        })
-
-    # 3. Точки старта
-    for courier_id, courier in enumerate(couriers):
-        point = all_points[start_indices[courier_id]]
-        features.append({
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [point.longitude, point.latitude]
-            },
-            "properties": {
-                "type": "start",
-                "courier": courier.name,
-                "color": colors[courier_id % len(colors)],
-                "marker-symbol": "warehouse"
-            }
-        })
-
-    # 4. Точки финиша
-    for courier_id, courier in enumerate(couriers):
-        point = all_points[end_indices[courier_id]]
-        features.append({
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [point.longitude, point.latitude]
-            },
-            "properties": {
-                "type": "end",
-                "courier": courier.name,
-                "color": colors[courier_id % len(colors)],
-                "marker-symbol": "home"
             }
         })
 
@@ -198,3 +158,92 @@ def export_routes_to_geojson(results: list[dict], orders: list[OrderData], couri
     }
     return geojson
 
+def get_marker_html(content, color) -> str:
+    marker_size = 20
+    font_size = 12
+    return f"""
+    <div style="position: relative;">
+    <div style="
+        background: white; 
+        width: {marker_size}px; 
+        height: {marker_size}px; 
+        border-radius: 50%; 
+        border: 3px solid {color};
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        cursor: pointer;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: {font_size}px;
+        text-align: center;
+        line-height: {font_size}px;
+    ">{content}</div>
+    </div>
+    """
+
+def export_route_points(results: list[dict], orders: list[OrderData], couriers: list[CourierData]) -> dict[str, object]:
+    points = []
+
+    # 2. Точки заказов
+    # Для быстрого доступа к времени прибытия по индексу заказа создадим словарь
+
+    
+    order_infos = {}
+    for courier_id, res in enumerate(results):
+        for i, order_idx, arrival_sec in zip(range(len(res['order_indices'])), res['order_indices'], res['arrival_times_seconds']):
+            order_infos[order_idx] = {
+                "arrival_sec": arrival_sec,
+                "number": i+1,
+                "courier_id": courier_id,
+            }
+
+    for order_idx, order in enumerate(orders):
+        order_info = order_infos.get(order_idx)
+
+        points.append({
+            "id": order.name,
+            "coordinates": [order.point.longitude, order.point.latitude],
+            "html": get_marker_html(order_info["number"], colors[order_info["courier_id"] % len(colors)]),
+        })
+
+    return points
+
+def export_start_points(results: list[dict], orders: list[OrderData], couriers: list[CourierData]) -> dict[str, object]:
+    # Соберём все точки для доступа по индексам
+    all_points = prepare_points(orders, couriers)
+    n_orders = len(orders)
+    n_couriers = len(couriers)
+    start_indices = [n_orders + i for i in range(n_couriers)]
+    end_indices = [n_orders + n_couriers + i for i in range(n_couriers)]
+
+    features = []
+    # 3. Точки старта
+    for courier_id, courier in enumerate(couriers):
+        point = all_points[start_indices[courier_id]]
+        features.append({
+            "id": len(features),
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [point.longitude, point.latitude]
+            }
+        })
+
+    # 4. Точки финиша
+    for courier_id, courier in enumerate(couriers):
+        point = all_points[end_indices[courier_id]]
+        features.append({
+            "id": len(features),
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [point.longitude, point.latitude]
+            }
+        })
+
+    geojson = {
+        "type": "FeatureCollection",
+        "features": features
+    }
+    return geojson
