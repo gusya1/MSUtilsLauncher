@@ -35,10 +35,8 @@ def extract_solution(solution, manager, routing, orders, couriers):
         while not routing.IsEnd(index):
             node = manager.IndexToNode(index)
             arrival_time = solution.Value(time_dimension.CumulVar(index))
-            logger.info("after")
             waiting_time = solution.Value(time_dimension.SlackVar(index))
             total_waiting_time += waiting_time
-            logger.info("before")
 
             if node < n_orders:
                 route_nodes.append(node)
@@ -48,6 +46,9 @@ def extract_solution(solution, manager, routing, orders, couriers):
 
         start_time = solution.Value(time_dimension.CumulVar(routing.Start(vehicle_id)))
         end_time = solution.Value(time_dimension.CumulVar(routing.End(vehicle_id)))
+
+        if not route_nodes:
+            continue
 
         results.append(
             {
@@ -153,9 +154,10 @@ def export_routes_lines_to_geojson(
             )
         # Финиш
         end_node = end_indices[courier_id]
-        line_coords.append(
-            [all_points[end_node].longitude, all_points[end_node].latitude]
-        )
+        if all_points[end_node].longitude != 0 and all_points[end_node].latitude != 0:
+            line_coords.append(
+                [all_points[end_node].longitude, all_points[end_node].latitude]
+            )
 
         features.append(
             {
@@ -200,16 +202,14 @@ def get_marker_html(content, color) -> str:
     """
 
 
-def export_route_points(
-    results: list[dict], orders: list[OrderData], couriers: list[CourierData]
-) -> dict[str, object]:
+def export_route_points(results: list[dict], orders: list[OrderData]):
     points = []
 
     # 2. Точки заказов
     # Для быстрого доступа к времени прибытия по индексу заказа создадим словарь
 
     order_infos = {}
-    for courier_id, res in enumerate(results):
+    for res in results:
         for i, order_idx, arrival_sec in zip(
             range(len(res["order_indices"])),
             res["order_indices"],
@@ -218,7 +218,7 @@ def export_route_points(
             order_infos[order_idx] = {
                 "arrival_sec": arrival_sec,
                 "number": i + 1,
-                "courier_id": courier_id,
+                "courier_id": res["courier_id"],
             }
 
     for order_idx, order in enumerate(orders):
@@ -237,44 +237,19 @@ def export_route_points(
     return points
 
 
-def export_start_points(
-    results: list[dict], orders: list[OrderData], couriers: list[CourierData]
-) -> dict[str, object]:
-    # Соберём все точки для доступа по индексам
-    all_points = prepare_points(orders, couriers)
-    n_orders = len(orders)
-    n_couriers = len(couriers)
-    start_indices = [n_orders + i for i in range(n_couriers)]
-    end_indices = [n_orders + n_couriers + i for i in range(n_couriers)]
-
-    features = []
-    # 3. Точки старта
-    for courier_id, courier in enumerate(couriers):
-        point = all_points[start_indices[courier_id]]
-        features.append(
-            {
-                "id": len(features),
-                "type": "Feature",
-                "geometry": {
-                    "type": "Point",
-                    "coordinates": [point.longitude, point.latitude],
-                },
-            }
-        )
-
-    # 4. Точки финиша
-    for courier_id, courier in enumerate(couriers):
-        point = all_points[end_indices[courier_id]]
-        features.append(
-            {
-                "id": len(features),
-                "type": "Feature",
-                "geometry": {
-                    "type": "Point",
-                    "coordinates": [point.longitude, point.latitude],
-                },
-            }
-        )
-
-    geojson = {"type": "FeatureCollection", "features": features}
-    return geojson
+def export_courier_break_points(results: list[dict], couriers: list[CourierData]):
+    points = []
+    for res in results:
+        courier = couriers[res["courier_id"]]
+        points.append({
+            "id": "start_point_{}".format(courier.name),
+            "coordinates": [courier.start.longitude, courier.start.latitude],
+            "html": get_marker_html("S", colors[res["courier_id"] % len(colors)]),
+        })
+        if courier.end:
+            points.append({
+                "id": "end_point_{}".format(courier.name),
+                "coordinates": [courier.end.longitude, courier.end.latitude],
+                "html": get_marker_html("F", colors[res["courier_id"] % len(colors)]),
+            })
+    return points

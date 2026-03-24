@@ -7,6 +7,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import FormView, TemplateView, View
 from django.http import JsonResponse
+from django.forms.utils import ErrorList
 
 from extra_views import FormSetView
 from numpy import add
@@ -20,7 +21,7 @@ from moy_sklad.utils import format_moy_sklad_datetime
 from yandex_geocoder.geocoder import Geocoder
 from yandex_geocoder.models import Location
 
-from .core.solution_processor import export_route_points, export_routes_lines_to_geojson, extract_solution, make_context
+from .core.solution_processor import export_courier_break_points, export_route_points, export_routes_lines_to_geojson, extract_solution, make_context
 from .core.delivery_data_preparator import create_data_model
 from .core.solver import solve_vrp
 from .core.time_intervals_identifier import parse_time_interval_safety
@@ -171,10 +172,7 @@ class CourierDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
     factory_kwargs = {'extra': 2, 'max_num': None, 'can_order': False, 'can_delete': True}
 
     def get_initial(self):
-        couriers = self.get_couriers()
-        if not couriers:
-            self.set_couriers(self.__get_couriers_by_settings())
-            couriers = self.get_couriers()
+        couriers = self.get_couriers() or self.__get_couriers_by_settings()
             
         data = []
         for courier in couriers:
@@ -189,6 +187,11 @@ class CourierDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
 
     def formset_valid(self, formset):
         new_data = list(self.__get_courier_by_form_data(data, formset[i]) for i, data in enumerate(formset.cleaned_data) if data and not data.get('DELETE', False))
+        
+        if not any(courier.enable for courier in new_data):
+            formset._non_form_errors = "Нет активных курьеров"
+            return super().formset_invalid(formset)
+        
         self.set_couriers(new_data)
 
         action = self.request.POST.get("action")
@@ -258,5 +261,5 @@ class GetGeojsonRoutesView(DeliveryRutingSessionMixin, View):
         couriers = self.get_enabled_couriers()
         return JsonResponse({
             "routes": export_routes_lines_to_geojson(results, orders, couriers),
-            "points": export_route_points(results, orders, couriers),
+            "points": export_route_points(results, orders) + export_courier_break_points(results, couriers)
         })
