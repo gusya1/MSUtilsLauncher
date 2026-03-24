@@ -67,6 +67,9 @@ class DeliveryRutingSessionMixin:
     def get_couriers(self):
         return [CourierData.model_validate_json(data) for data in self.request.session.get(self.root_key, {}).get("couriers", [])]
     
+    def get_enabled_couriers(self):
+        return [courier for courier in self.get_couriers() if courier.enable]
+    
     def set_results(self, results: list):
         self.request.session.setdefault(self.root_key, {})["results"] = results
         self.request.session.modified = True
@@ -176,6 +179,7 @@ class CourierDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
         data = []
         for courier in couriers:
             data.append({
+                "enable": courier.enable,
                 "name": courier.name,
                 "use_home_location": courier.end is not None,
                 "capacity": courier.capacitiy
@@ -201,7 +205,8 @@ class CourierDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
             courier = None
         if use_home_location and (courier is None or courier.home_location is None):
                 form.add_error("use_home_location", "Нельзя установить домашнюю локацию для этого курьера")
-        return CourierData(name=data["name"], 
+        return CourierData(enable=data["enable"],
+                           name=data["name"], 
                            start=make_point_by_location(settings.store_location), 
                            end=make_point_by_location(courier.home_location) if use_home_location and courier else None,
                            capacitiy=data["capacity"])
@@ -225,7 +230,7 @@ class ProcessView(AppViewMixin, DeliveryRutingSessionMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         orders = self.get_orders()
         # fill geocoder
-        couriers = self.get_couriers()
+        couriers = self.get_enabled_couriers()
         data = create_data_model(orders, couriers)
         solution, manager, routing = solve_vrp(data)
         if solution:
@@ -250,7 +255,7 @@ class GetGeojsonRoutesView(DeliveryRutingSessionMixin, View):
     def get(self, request, *args, **kwargs):
         results = self.get_results()
         orders = self.get_orders()
-        couriers = self.get_couriers()
+        couriers = self.get_enabled_couriers()
         return JsonResponse({
             "routes": export_routes_lines_to_geojson(results, orders, couriers),
             "points": export_route_points(results, orders, couriers),

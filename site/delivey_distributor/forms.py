@@ -46,6 +46,7 @@ class OrderForm(forms.Form):
 
 
 class CourierForm(forms.Form):
+    enable = forms.BooleanField(label='Кто везёт сегодня', required=False)
     name = forms.CharField(label='Имя')
     use_home_location = forms.BooleanField(label='Использовать локацию дома', required=False)
     capacity = forms.IntegerField(label='Вместимость (кг)')

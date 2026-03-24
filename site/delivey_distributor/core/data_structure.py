@@ -15,6 +15,7 @@ class OrderData(pydantic.BaseModel):
     weight: float
 
 class CourierData(pydantic.BaseModel):
+    enable: bool = True
     end: Point | None = None
     start: Point
     capacitiy: int

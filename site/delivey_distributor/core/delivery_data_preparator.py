@@ -58,24 +58,19 @@ def create_data_model(orders: list[OrderData], couriers: list[CourierData]):
     points = prepare_points(orders, couriers)
     time_matrix = compute_time_matrix(points)
 
-    dummy_index = len(time_matrix)
-    for row in time_matrix:
-        row.append(0)
-    time_matrix.append([0]*(dummy_index+1))
 
     data['time_matrix'] = time_matrix
-    data['dummy_index'] = dummy_index
     n_orders = len(orders)
     n_couriers = len(couriers)
 
-    data['demands'] = get_order_demands(orders) + ([0] * (2 * len(couriers))) + [0]
+    data['demands'] = get_order_demands(orders) + ([0] * (2 * len(couriers)))
 
     # Временные окна для всех точек.
     # Для заказов: [ready_time, due_time].
     # (можно задать жёсткое окно или добавить штраф за опоздание).
     data['time_windows'] = get_order_time_windows(orders)
     
-    data['service_times'] = ([60 * 10] * n_orders) + ([60 * 30] * n_couriers) + ([0] * n_couriers) + [0]
+    data['service_times'] = ([60 * 10] * n_orders) + ([60 * 30] * n_couriers) + ([0] * n_couriers)
 
     # Количество курьеров
     data['num_vehicles'] = n_couriers
@@ -90,7 +85,10 @@ def create_data_model(orders: list[OrderData], couriers: list[CourierData]):
 
     for i, courier in enumerate(couriers):
         if not courier.end:
-            data['ends'][0] = dummy_index
+            end_index = data['ends'][i]
+            data['time_matrix'][end_index] = [0] * len(data['time_matrix'])
+            for line in data['time_matrix']:
+                line[end_index] = 0
 
     # максимальное время ожидания курьера
     data['max_waiting_time'] = 24*3600
@@ -101,6 +99,4 @@ def create_data_model(orders: list[OrderData], couriers: list[CourierData]):
     # максимальные рабочие часы курьера
     data['work_hours'] = 8*3600
 
-
-    logger.debug(data)
     return data

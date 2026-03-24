@@ -26,14 +26,24 @@ def add_time_dimension(routing, manager, data):
         data['max_time'],     # максимальное время маршрута
         False,  # не заставлять суммировать время от начала (start cumul to zero)
         'Time')
+    
     time_dimension = routing.GetDimensionOrDie('Time')
+
+    for index in range(routing.Size()):
+        routing.AddToAssignment(time_dimension.SlackVar(index))
+
+    # штраф за секунду простоя
+    time_dimension.SetSlackCostCoefficientForAllVehicles(100)
 
     for node_idx, (window_start, window_end) in enumerate(data['time_windows']):
         if window_start is not None and window_end is not None:
             index = manager.NodeToIndex(node_idx)
             assert(index >= 0)
-            time_dimension.CumulVar(index).SetRange(int(window_start), int(window_end))
-    
+            max_late = 60*60
+            time_dimension.CumulVar(index).SetRange(int(window_start) - max_late, int(window_end) + max_late)
+            time_dimension.SetCumulVarSoftUpperBound(index, int(window_end), 1000) # штраф за опаздание
+            time_dimension.SetCumulVarSoftLowerBound(index, int(window_start), 1000)  # штраф за ранний приезд
+
     for vehicle_id in range(data['num_vehicles']):
         start_index = routing.Start(vehicle_id)
         end_index = routing.End(vehicle_id)
@@ -44,8 +54,8 @@ def add_time_dimension(routing, manager, data):
 
         bound_cost = pywrapcp.BoundCost(data['work_hours'], 10)
         time_dimension.SetSoftSpanUpperBoundForVehicle(bound_cost, vehicle_id)
-        time_dimension.SetCumulVarSoftLowerBound(end_index, start, 1000)
-        time_dimension.SetCumulVarSoftUpperBound(end_index, end, 1000)
+        time_dimension.SetCumulVarSoftUpperBound(end_index, end, 100)
+        routing.AddVariableMinimizedByFinalizer(time_dimension.CumulVar(end_index))
 
 
 def add_capacity_dimension(routing, manager, data):
@@ -81,7 +91,7 @@ def solve_vrp(data):
         routing_enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION)
     search_parameters.local_search_metaheuristic = (
         routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
-    search_parameters.time_limit.seconds = 20  # лимит времени на поиск
+    search_parameters.time_limit.seconds = 60*1 # лимит времени на поиск
     # search_parameters.log_search = True
 
     logger.debug("SolveWithParameters")
