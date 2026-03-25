@@ -20,12 +20,14 @@ from django.urls import path
 
 from . import views
 
-app_name = 'delivey_distributor'
+app_name = 'delivery_distributor'
 
 urlpatterns = [
     path('', views.IndexView.as_view(), name='index'),
     path('orders', views.OrderDetailsView.as_view(), name='orders'),
     path('couriers', views.CourierDetailsView.as_view(), name='couriers'),
+    path('routing-details', views.RoutingDetailsView.as_view(), name='routing_details'),
     path('process', views.ProcessView.as_view(), name='process'),
+    path('results', views.ResultsView.as_view(), name='results'),
     path('get-routes', views.GetGeojsonRoutesView.as_view(), name='get_routes'),
 ]

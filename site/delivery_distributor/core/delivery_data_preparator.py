@@ -2,10 +2,10 @@ import datetime
 import logging
 import json
 
-from .data_structure import CourierData, OrderData, Point
+from .data_structure import CourierData, OrderData, Point, RoutingData, RoutingSettingsData
 from .osrm_client import compute_time_matrix
 
-logger = logging.getLogger("delivey_distributor")
+logger = logging.getLogger("delivery_distributor")
 
 def prepare_points(orders: list[OrderData], couriers: list[CourierData]) -> list[Point]:
     """
@@ -36,17 +36,19 @@ def duration_from_day_start(time: datetime.time) -> int:
 def end_of_day() -> int:
     return duration_from_day_start(datetime.time.max)
 
-def get_order_time_windows(orders: list[OrderData]) -> list[tuple[float, float]]:
+def get_order_time_windows(orders: list[OrderData]) -> list[tuple[int, int]]:
     """
     Вычисляет временные окна для заказов.
     """
     return [(duration_from_day_start(order.start_time), duration_from_day_start(order.end_time)) for order in orders]
 
 def get_order_demands(orders):
-    return [int(order.weight) for order in orders]
+    return [int(order.weight * 1000) for order in orders]
 
-def create_data_model(orders: list[OrderData], couriers: list[CourierData]):
-    data = {}
+def get_courier_capacities(couriers: list[CourierData]):
+    return [int(courier.capacitiy * 1000) for courier in couriers]
+
+def create_data_model(orders: list[OrderData], couriers: list[CourierData], settings: RoutingSettingsData):
     # Матрица времени (в секундах) между всеми точками.
     # Индексы: 0..(num_orders-1) - заказы,
     # потом идут начальные точки курьеров, потом конечные (или отдельно).
@@ -59,44 +61,42 @@ def create_data_model(orders: list[OrderData], couriers: list[CourierData]):
     time_matrix = compute_time_matrix(points)
 
 
-    data['time_matrix'] = time_matrix
     n_orders = len(orders)
     n_couriers = len(couriers)
-
-    data['demands'] = get_order_demands(orders) + ([0] * (2 * len(couriers)))
-
-    # Временные окна для всех точек.
-    # Для заказов: [ready_time, due_time].
-    # (можно задать жёсткое окно или добавить штраф за опоздание).
-    data['time_windows'] = get_order_time_windows(orders)
     
-    data['service_times'] = ([60 * 10] * n_orders) + ([60 * 30] * n_couriers) + ([0] * n_couriers)
+    demands = get_order_demands(orders) + ([0] * (2 * n_couriers))
 
-    # Количество курьеров
-    data['num_vehicles'] = n_couriers
-    data['num_orders'] = n_orders
+    # Временные окна для заказов.
+    # Для заказов: [ready_time, due_time].
+    time_windows = get_order_time_windows(orders)
+    
+    # Время обслуживания заказов.
+    service_times = ([settings.order_service_time_sec] * n_orders) + ([settings.start_service_time_sec] * n_couriers) + ([0] * n_couriers)
+
     
     # вместимость курьеров
-    data['vehicle_capacities'] = [courier.capacitiy for courier in couriers]
+    vehicle_capacities = get_courier_capacities(couriers)
     
     # Индексы старта и финиша для каждого курьера
-    data['starts'] = [n_orders + i for i in range(n_couriers)]
-    data['ends'] = [n_orders + n_couriers + i for i in range(n_couriers)]
+    starts = [n_orders + i for i in range(n_couriers)]
+    ends = [n_orders + n_couriers + i for i in range(n_couriers)]
 
+    # зануляем время до финиша ля курьеров без дома
     for i, courier in enumerate(couriers):
         if not courier.end:
-            end_index = data['ends'][i]
-            data['time_matrix'][end_index] = [0] * len(data['time_matrix'])
-            for line in data['time_matrix']:
+            end_index = ends[i]
+            time_matrix[end_index] = [0] * len(time_matrix)
+            for line in time_matrix:
                 line[end_index] = 0
 
-    # максимальное время ожидания курьера
-    data['max_waiting_time'] = 24*3600
-    # максимальное время когда курьер должен прибыть в конечную точку
-    data['max_time'] = 24*3600
-    # время работы курьеров
-    data['work_time_interval'] = (0, end_of_day())
-    # максимальные рабочие часы курьера
-    data['work_hours'] = 8*3600
-
-    return data
+    return RoutingData(
+        time_matrix=time_matrix,
+        demands=demands,
+        time_windows=time_windows,
+        service_times=service_times,
+        num_vehicles=n_couriers,
+        num_orders=n_orders,
+        vehicle_capacities=vehicle_capacities,
+        starts=starts,
+        ends=ends,
+    )

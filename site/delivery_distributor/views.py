@@ -1,13 +1,11 @@
-import json
 import logging
-import re
-from venv import logger
+import datetime
 
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import FormView, TemplateView, View
 from django.http import JsonResponse
-from django.forms.utils import ErrorList
+from django.views.generic.detail import DetailView
 
 from extra_views import FormSetView
 from numpy import add
@@ -25,12 +23,12 @@ from .core.solution_processor import export_courier_break_points, export_route_p
 from .core.delivery_data_preparator import create_data_model
 from .core.solver import solve_vrp
 from .core.time_intervals_identifier import parse_time_interval_safety
-from .core.data_structure import CourierData, OrderData, Point
-from .apps import DeliveyDistributorConfig
-from .forms import CourierForm, DateChooseForm, OrderForm
+from .core.data_structure import CourierData, OrderData, Point, RoutingSettingsData
+from .apps import DeliveryDistributorConfig
+from .forms import CourierForm, DateChooseForm, DeliveryRoutingSettingsForm, OrderForm
 from .models import Courier, DeliveryRoutingSettings
 
-logger = logging.getLogger("delivey_distributor")
+logger = logging.getLogger("delivery_distributor")
 
 
 
@@ -39,7 +37,7 @@ class AppViewMixin:
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = DeliveyDistributorConfig.verbose_name
+        context['title'] = DeliveryDistributorConfig.verbose_name
         context['subtitle'] = self.subtitle
         return context
 
@@ -71,6 +69,15 @@ class DeliveryRutingSessionMixin:
     def get_enabled_couriers(self):
         return [courier for courier in self.get_couriers() if courier.enable]
     
+    def set_settings(self, settings: RoutingSettingsData):
+        self.request.session.setdefault(self.root_key, {})["settings"] = settings.model_dump_json()
+        self.request.session.modified = True
+    
+    def get_settings(self) -> RoutingSettingsData | None:
+        if data := self.request.session.get(self.root_key, {}).get("settings"):
+            return RoutingSettingsData.model_validate_json(data)
+        return None
+
     def set_results(self, results: list):
         self.request.session.setdefault(self.root_key, {})["results"] = results
         self.request.session.modified = True
@@ -89,7 +96,7 @@ def make_point_by_location(location: Location):
 class IndexView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
     template_name = 'base_form_page.html'
     form_class = DateChooseForm
-    success_url = reverse_lazy("delivey_distributor:orders")
+    success_url = reverse_lazy("delivery_distributor:orders")
     subtitle = "Выберите день доставки"
     
     def form_valid(self, form):
@@ -130,10 +137,10 @@ class IndexView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
     
 
 class OrderDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
-    template_name = 'delivey_distributor/formset_page.html'
+    template_name = 'delivery_distributor/formset_page.html'
     form_class = OrderForm
     subtitle = "Детали заказов"
-    success_url = reverse_lazy("delivey_distributor:couriers")
+    success_url = reverse_lazy("delivery_distributor:couriers")
     factory_kwargs = {'extra': 2, 'max_num': None, 'can_order': False, 'can_delete': True}
 
     def __init__(self, **kwargs):
@@ -165,10 +172,10 @@ class OrderDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
         return data
 
 class CourierDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
-    template_name = 'delivey_distributor/formset_page.html'
+    template_name = 'delivery_distributor/formset_page.html'
     form_class = CourierForm
     subtitle = "Детали курьеров"
-    success_url = reverse_lazy("delivey_distributor:process")
+    success_url = reverse_lazy("delivery_distributor:routing_details")
     factory_kwargs = {'extra': 2, 'max_num': None, 'can_order': False, 'can_delete': True}
 
     def get_initial(self):
@@ -222,26 +229,98 @@ class CourierDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
             courier_settings: Courier
             couriers.append(CourierData(name=courier_settings.name, 
                                         start=make_point_by_location(settings.store_location), 
-                                        end=make_point_by_location(courier_settings.home_location),
+                                        end=make_point_by_location(courier_settings.home_location) if courier_settings.home_location else None,
                                         capacitiy=courier_settings.capacity))
         return couriers
     
-class ProcessView(AppViewMixin, DeliveryRutingSessionMixin, TemplateView):
-    template_name = 'delivey_distributor/result_page.html'
-    subtitle = "Результат"
 
+class RoutingDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
+    template_name = 'delivery_distributor/routing_details.html'
+    form_class  = DeliveryRoutingSettingsForm
+    success_url = reverse_lazy("delivery_distributor:process")
+
+    def post(self, request, *args, **kwargs):
+        if request.POST.get("action") == "reset":
+            self.set_settings(self._get_settings_data_from_model(DeliveryRoutingSettings.get_solo()))
+            return redirect(request.path)
+
+        return super().post(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs() 
+        if settings_data:= self.get_settings():
+            instance = self._get_settings_model_from_data(settings_data)
+        else:
+            instance = DeliveryRoutingSettings.get_solo()
+        
+        kwargs['instance'] = instance
+        logger.info(kwargs)
+        return kwargs
+    
+    def form_valid(self, form):
+        new_data = self._get_settings_data_from_model(form.instance)
+        self.set_settings(new_data)
+        action = self.request.POST.get("action")
+        if action == "save":
+            return redirect(self.request.path)
+        return super().form_valid(form)
+    
+    def _get_settings_data_from_model(self, settings: DeliveryRoutingSettings):
+        return RoutingSettingsData(
+            traffic_factor=settings.traffic_factor,
+            start_service_time_sec=int(settings.start_service_time.total_seconds()),
+            order_service_time_sec=int(settings.order_service_time.total_seconds()),
+            max_waiting_time_sec=int(settings.max_waiting_time.total_seconds()),
+            max_time_sec=int(settings.max_time.total_seconds()),
+            start_work_time_sec=int(settings.start_work_time.total_seconds()),
+            end_work_time_sec=int(settings.end_work_time.total_seconds()),
+            work_hours_sec=int(settings.work_hours.total_seconds()),
+            max_late_sec=int(settings.max_late.total_seconds()),
+            late_penalty=settings.late_penalty,
+            exceed_work_hours_penalty=settings.exceed_work_hours_penalty,
+            exceed_work_time_penalty=settings.exceed_work_time_penalty,
+            exceed_capacity_penalty=settings.exceed_capacity_penalty,
+            max_process_time_sec=int(settings.max_process_time.total_seconds()),
+        )
+
+    def _get_settings_model_from_data(self, data: RoutingSettingsData) -> DeliveryRoutingSettings:
+        instance = DeliveryRoutingSettings.get_solo()
+
+        # Поля, общие для обеих моделей
+        instance.traffic_factor = data.traffic_factor
+        instance.start_service_time = datetime.timedelta(seconds=data.start_service_time_sec)
+        instance.order_service_time = datetime.timedelta(seconds=data.order_service_time_sec)
+        instance.max_waiting_time = datetime.timedelta(seconds=data.max_waiting_time_sec)
+        instance.max_time = datetime.timedelta(seconds=data.max_time_sec)
+        instance.start_work_time = datetime.timedelta(seconds=data.start_work_time_sec)
+        instance.end_work_time = datetime.timedelta(seconds=data.end_work_time_sec)
+        instance.work_hours = datetime.timedelta(seconds=data.work_hours_sec)
+        instance.max_late = datetime.timedelta(seconds=data.max_late_sec)
+        instance.late_penalty = data.late_penalty
+        instance.exceed_work_hours_penalty = data.exceed_work_hours_penalty
+        instance.exceed_work_time_penalty = data.exceed_work_time_penalty
+        instance.exceed_capacity_penalty = data.exceed_capacity_penalty
+        instance.max_process_time = datetime.timedelta(seconds=data.max_process_time_sec)
+
+        return instance
+
+
+class ProcessView(DeliveryRutingSessionMixin, View):
     def get(self, request, *args, **kwargs):
+        self.set_results([])
         orders = self.get_orders()
-        # fill geocoder
+        settings = self.get_settings()
         couriers = self.get_enabled_couriers()
-        data = create_data_model(orders, couriers)
-        solution, manager, routing = solve_vrp(data)
+        data = create_data_model(orders, couriers, settings)
+        solution, manager, routing = solve_vrp(data, settings)
         if solution:
             self.set_results(extract_solution(solution, manager, routing, orders, couriers))
-        else:
-            print("Решение не найдено!")
 
-        return super().get(request, *args, **kwargs)
+        return redirect(reverse_lazy('delivery_distributor:results'))
+    
+class ResultsView(AppViewMixin, DeliveryRutingSessionMixin, TemplateView):
+    template_name = 'delivery_distributor/result_page.html'
+    subtitle = "Результат"
 
     def get_context_data(self,*args, **kwargs):
         context = super().get_context_data(*args,**kwargs)
@@ -250,11 +329,9 @@ class ProcessView(AppViewMixin, DeliveryRutingSessionMixin, TemplateView):
         if results:
             context.update(make_context(results, orders))
         return context
-    
-class GetGeojsonRoutesView(DeliveryRutingSessionMixin, View):
-    template_name = 'delivey_distributor/result_page.html'
-    subtitle = "Результат"
 
+
+class GetGeojsonRoutesView(DeliveryRutingSessionMixin, View):
     def get(self, request, *args, **kwargs):
         results = self.get_results()
         orders = self.get_orders()

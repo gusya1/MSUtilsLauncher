@@ -1,0 +1,13 @@
+{% csrf_token %}
+{# Общие ошибки формы (не привязанные к конкретному полю) #}
+{% if form.non_field_errors %}
+<div class="alert alert-danger">
+    {% for error in form.non_field_errors %}
+    {{ error }}
+    {% endfor %}
+</div>
+{% endif %}
+{# Перебор всех полей формы #}
+{% for field in form %}
+    {% include "partials/horizontal_field.html" with field=field %}
+{% endfor %}

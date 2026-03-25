@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     'colorful',
+    'widget_tweaks',
     
     'moy_sklad_settings',
     'yandex_geocoder',
@@ -35,7 +36,7 @@ INSTALLED_APPS = [
     'accounts_synchronize',
     'delivery_map_creator',
     'delivery_map_loader',
-    'delivey_distributor',
+    'delivery_distributor',
     'yandex_map',
 ]
 
@@ -93,13 +94,25 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'ru-RU'
 
-TIME_ZONE = 'UTC'
-
 USE_I18N = True
 
 USE_L10N = True
 
 USE_TZ = True
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get('DB_NAME'),
+        "USER": os.environ.get('DB_USER'),
+        "PASSWORD": os.environ.get('DB_PASSWORD'),
+        "HOST": os.environ.get('DB_HOST', 'db'),
+        "PORT": 5432,
+        "TEST": {
+            "NAME": "test_snmprogs",
+        },
+    }
+}
 
 STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.FileSystemFinder",

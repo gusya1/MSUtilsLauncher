@@ -4,7 +4,7 @@ import logging
 from .data_structure import CourierData, OrderData
 from .delivery_data_preparator import prepare_points
 
-logger = logging.getLogger("delivey_distributor")
+logger = logging.getLogger("delivery_distributor")
 
 def seconds_to_time(seconds: int) -> datetime.time:
     """

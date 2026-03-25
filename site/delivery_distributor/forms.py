@@ -3,16 +3,16 @@ import logging
 import re
 
 from django import forms
-
+from django.forms import ModelForm
 
 from yandex_geocoder.geocoder import Geocoder
 from yandex_geocoder.models import Location
 
 from .core.data_structure import Point
-from .models import Courier
+from .models import Courier, DeliveryRoutingSettings
 
 
-logger = logging.getLogger("delivey_distributor")
+logger = logging.getLogger("delivery_distributor")
 
 
 def make_point_by_location(location: Location):
@@ -67,3 +67,9 @@ class CourierForm(forms.Form):
 
         if not courier or not courier.home_location:
             self.fields["use_home_location"].disabled = True
+
+class DeliveryRoutingSettingsForm(ModelForm):
+    class Meta:
+        model = DeliveryRoutingSettings
+        fields="__all__"
+        exclude = ['store_location']

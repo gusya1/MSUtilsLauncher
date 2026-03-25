@@ -1,15 +1,19 @@
-{% extends "base_generic.html" %}
+{% extends "delivery_distributor/delivery_distributor_page_base.html" %}
 
 {% load yandex_maps_tags %}
 {% load static %}
 
-{% block content %}
-<div class="row mb-4">
+{% block breadcrumbs %}
     <p>
-        <a href="{% url "delivey_distributor:orders" %}">Назад к заказам</a>
-        <- <a href="{% url "delivey_distributor:couriers" %}">Назад к курьерам</a>
+        <a href="{% url "delivery_distributor:index" %}">Назад к выбору даты</a>
+        <- <a href="{% url "delivery_distributor:orders" %}">Назад к заказам</a>
+        <- <a href="{% url "delivery_distributor:couriers" %}">Назад к курьерам</a>
+        <- <a href="{% url "delivery_distributor:routing_details" %}">Назад к деталям маршрутизации</a>
     </p>
-</div>
+{% endblock  %}
+
+{% block content %}
+{{ block.super }}
 <div class="row mb-4">
     <div id="map" style="width: 100%; height: 400px;"></div>
 </div>
@@ -47,6 +51,6 @@
 {% block extra_js %}
     {% yandex_maps_on_load_script %}
     <script src="{% static "yandex_map/js/yandex_map.js" %}"></script>
-    <script>get_routes_url = "{% url "delivey_distributor:get_routes" %}"; </script>
-    <script src="{% static "delivey_distributor/js/load_routes.js" %}"></script>
+    <script>get_routes_url = "{% url "delivery_distributor:get_routes" %}"; </script>
+    <script src="{% static "delivery_distributor/js/load_routes.js" %}"></script>
 {% endblock %}

@@ -48,7 +48,7 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
-        'delivey_distributor': {
+        'delivery_distributor': {
             'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': True,
@@ -58,14 +58,6 @@ LOGGING = {
         'handlers': ['mail_admins', 'console'],
         'level': 'ERROR',
     },
-}
-
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'db.sqlite3',
-    }
 }
 
 YANDEX_MAPS_API_KEY = os.environ.get('YANDEX_MAPS_API_KEY', None)

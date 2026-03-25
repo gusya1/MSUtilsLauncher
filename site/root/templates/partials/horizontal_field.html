@@ -1,0 +1,34 @@
+{% load widget_tweaks %}
+
+<div class="row mb-3">
+    <label for="{{ field.id_for_label }}" class="col-sm-4 col-form-label text-end">
+        {{ field.label }}
+        {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+    </label>
+    <div class="col-sm-8">
+        {# Добавляем класс Bootstrap в зависимости от типа поля #}
+        {% if field.field.widget.input_type == 'checkbox' %}
+            <div class="form-check">
+                {{ field|add_class:"form-check-input" }}
+                <label class="form-check-label" for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                </label>
+            </div>
+        {% elif field.field.widget.input_type == 'select' %}
+            {{ field|add_class:"form-select" }}
+        {% else %}
+            {{ field|add_class:"form-control" }}
+        {% endif %}
+
+        {% if field.help_text %}
+            <div class="form-text">{{ field.help_text }}</div>
+        {% endif %}
+        {% if field.errors %}
+            <div class="invalid-feedback d-block">
+                {% for error in field.errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>

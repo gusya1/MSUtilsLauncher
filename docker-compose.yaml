@@ -1,4 +1,16 @@
 services:
+  db:
+    image: postgres:14
+    container_name: snmprogs_db
+    volumes:
+      - postgres_volume:/var/lib/postgresql/data/
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    restart: unless-stopped
   web:
     build: ./site
     container_name: snmprogs_web
@@ -6,6 +18,8 @@ services:
       - ./site:/app
       - static_volume:/app/static
       - media_volume:/app/media
+    depends_on:
+      - db
     env_file:
       - .env
     environment:
@@ -32,5 +46,6 @@ services:
       osrm-routed --algorithm mld /data/map.osrm
       "
 volumes:
+  postgres_volume:
   static_volume:
   media_volume:
