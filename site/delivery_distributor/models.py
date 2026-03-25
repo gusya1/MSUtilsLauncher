@@ -20,6 +20,11 @@ class DeliveryRoutingSettings(SingletonModelMixin, models.Model):
         help_text="Система не учитывает пробки. Для получения картины более приближенной к реальности \
             время между двумя точками рассчитывается по формуле: time * (1 + traffic_factor)",
     )
+    fuel_factor = models.FloatField(
+        default=10,
+        verbose_name="Расход топлива",
+        help_text="Расход топлива на л/100 км",
+    )
     start_service_time = models.DurationField(
         default=datetime.timedelta(minutes=30),
         verbose_name="Время на погрузку",
@@ -54,10 +59,18 @@ class DeliveryRoutingSettings(SingletonModelMixin, models.Model):
         default=datetime.timedelta(hours=1), 
         verbose_name="Максимальное время опоздания к заказу", 
         help_text="Максимально возможное отклонение времени прибытия к заказу от назначенного интервала")
+    vehicle_start_cost = models.IntegerField(
+        default=10000, 
+        verbose_name="Стоимость использования одной машины", 
+        help_text="Используется для избегания коротких маршрутов")
     late_penalty = models.IntegerField(
         default=1000, 
         verbose_name="Штраф за опоздание", 
         help_text="Штраф решению за каждую секунду отклонения времени прибытия к заказу от назначенного инревала")
+    slack_penalty = models.IntegerField(
+        default=10, 
+        verbose_name="Штраф за простой", 
+        help_text="Штраф решению за каждую секунду простоя курьера")
     exceed_work_hours_penalty = models.IntegerField(
         default=100, 
         verbose_name="Штраф за превышение рабочих часов",

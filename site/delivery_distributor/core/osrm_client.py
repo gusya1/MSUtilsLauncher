@@ -1,8 +1,39 @@
+import logging
+
 import requests
 
 from django.conf import settings
 
 from .data_structure import Point
+
+logger = logging.getLogger("delivery_distributor")
+
+
+def compute_matrices(points: list[Point]) -> list[list[float]]:
+    """
+    Вычисляет матрицу времени в секундах для списка точек,
+    используя OSRM (http://localhost:5000).
+    """
+    coords = ";".join(f"{p.longitude},{p.latitude}" for p in points)
+    url = f"{settings.OSRM_URL}/table/v1/driving/{coords}?annotations=distance,duration"
+    
+    response = requests.get(url)
+    data = response.json()
+    
+    if data.get("code") != "Ok":
+        raise RuntimeError(f"OSRM error: {data.get('message', 'Unknown error')}")
+    
+    # durations — это матрица в секундах (float)
+    durations = data["durations"]
+    distances = data["distances"]
+
+    # Убедимся, что это квадратная матрица нужного размера
+    if len(durations) != len(points) or any(len(row) != len(points) for row in durations):
+        raise ValueError("OSRM вернул матрицу неверного размера")
+    if len(durations) != len(points) or any(len(row) != len(points) for row in distances):
+        raise ValueError("OSRM вернул матрицу неверного размера")
+
+    return durations, distances
 
 
 def compute_time_matrix(points: list[Point]) -> list[list[float]]:
@@ -21,6 +52,31 @@ def compute_time_matrix(points: list[Point]) -> list[list[float]]:
     
     # durations — это матрица в секундах (float)
     durations = data["durations"]
+    logger.debug(f"OSRM returned: {data}")
+
+    # Убедимся, что это квадратная матрица нужного размера
+    if len(durations) != len(points) or any(len(row) != len(points) for row in durations):
+        raise ValueError("OSRM вернул матрицу неверного размера")
+
+    return durations
+
+def compute_distance_matrix(points: list[Point]) -> list[list[float]]:
+    """
+    Вычисляет матрицу времени в секундах для списка точек,
+    используя OSRM (http://localhost:5000).
+    """
+    coords = ";".join(f"{p.longitude},{p.latitude}" for p in points)
+    url = f"{settings.OSRM_URL}/table/v1/driving/{coords}?annotations=distance"
+    
+    response = requests.get(url)
+    data = response.json()
+    
+    if data.get("code") != "Ok":
+        raise RuntimeError(f"OSRM error: {data.get('message', 'Unknown error')}")
+    
+    # durations — это матрица в секундах (float)
+    durations = data["distances"]
+    logger.debug(f"OSRM returned: {data}")
 
     # Убедимся, что это квадратная матрица нужного размера
     if len(durations) != len(points) or any(len(row) != len(points) for row in durations):

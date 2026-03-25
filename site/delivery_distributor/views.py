@@ -254,7 +254,6 @@ class RoutingDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
             instance = DeliveryRoutingSettings.get_solo()
         
         kwargs['instance'] = instance
-        logger.info(kwargs)
         return kwargs
     
     def form_valid(self, form):
@@ -268,6 +267,7 @@ class RoutingDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
     def _get_settings_data_from_model(self, settings: DeliveryRoutingSettings):
         return RoutingSettingsData(
             traffic_factor=settings.traffic_factor,
+            fuel_factor=settings.fuel_factor,
             start_service_time_sec=int(settings.start_service_time.total_seconds()),
             order_service_time_sec=int(settings.order_service_time.total_seconds()),
             max_waiting_time_sec=int(settings.max_waiting_time.total_seconds()),
@@ -276,7 +276,9 @@ class RoutingDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
             end_work_time_sec=int(settings.end_work_time.total_seconds()),
             work_hours_sec=int(settings.work_hours.total_seconds()),
             max_late_sec=int(settings.max_late.total_seconds()),
+            vehicle_start_cost=settings.vehicle_start_cost,
             late_penalty=settings.late_penalty,
+            slack_penalty=settings.slack_penalty,
             exceed_work_hours_penalty=settings.exceed_work_hours_penalty,
             exceed_work_time_penalty=settings.exceed_work_time_penalty,
             exceed_capacity_penalty=settings.exceed_capacity_penalty,
@@ -288,6 +290,7 @@ class RoutingDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
 
         # Поля, общие для обеих моделей
         instance.traffic_factor = data.traffic_factor
+        instance.fuel_factor = data.fuel_factor
         instance.start_service_time = datetime.timedelta(seconds=data.start_service_time_sec)
         instance.order_service_time = datetime.timedelta(seconds=data.order_service_time_sec)
         instance.max_waiting_time = datetime.timedelta(seconds=data.max_waiting_time_sec)
@@ -296,7 +299,9 @@ class RoutingDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
         instance.end_work_time = datetime.timedelta(seconds=data.end_work_time_sec)
         instance.work_hours = datetime.timedelta(seconds=data.work_hours_sec)
         instance.max_late = datetime.timedelta(seconds=data.max_late_sec)
+        instance.vehicle_start_cost = data.vehicle_start_cost
         instance.late_penalty = data.late_penalty
+        instance.slack_penalty = data.slack_penalty
         instance.exceed_work_hours_penalty = data.exceed_work_hours_penalty
         instance.exceed_work_time_penalty = data.exceed_work_time_penalty
         instance.exceed_capacity_penalty = data.exceed_capacity_penalty

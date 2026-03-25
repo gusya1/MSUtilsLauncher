@@ -17,8 +17,6 @@ def add_time_dimension(routing, manager, data: RoutingData, settings: RoutingSet
         return int(travel_time * (1 + settings.traffic_factor) + service_time)
     
     transit_callback_index = routing.RegisterTransitCallback(time_callback)
-    
-    # Задаём стоимость как сумму времени всех переездов (минимизация общего времени)
     routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
     
     # Добавляем измерение времени (Time Windows)
@@ -35,7 +33,7 @@ def add_time_dimension(routing, manager, data: RoutingData, settings: RoutingSet
         routing.AddToAssignment(time_dimension.SlackVar(index))
 
     # штраф за секунду простоя
-    time_dimension.SetSlackCostCoefficientForAllVehicles(100)
+    time_dimension.SetSlackCostCoefficientForAllVehicles(settings.slack_penalty)
 
     for node_idx, (window_start, window_end) in enumerate(data.time_windows):
         if window_start is not None and window_end is not None:
@@ -50,15 +48,35 @@ def add_time_dimension(routing, manager, data: RoutingData, settings: RoutingSet
         end_index = routing.End(vehicle_id)
 
         start, end = settings.start_work_time_sec, settings.end_work_time_sec
-        time_dimension.CumulVar(start_index).SetRange(start, end)
-        time_dimension.CumulVar(end_index).SetRange(start, end)
 
         bound_cost = pywrapcp.BoundCost(settings.work_hours_sec, settings.exceed_work_hours_penalty)
         time_dimension.SetSoftSpanUpperBoundForVehicle(bound_cost, vehicle_id)
         time_dimension.SetCumulVarSoftUpperBound(end_index, end, settings.exceed_work_time_penalty)
-        time_dimension.SetCumulVarSoftLowerBound(end_index, end, settings.exceed_work_time_penalty)
+        time_dimension.SetCumulVarSoftLowerBound(end_index, start, settings.exceed_work_time_penalty)
         routing.AddVariableMinimizedByFinalizer(time_dimension.CumulVar(end_index))
 
+
+def add_fuel_dimension(routing, manager, data: RoutingData, settings: RoutingSettingsData):
+    
+    def fuel_callback(from_index, to_index):
+        from_node = manager.IndexToNode(from_index)
+        to_node = manager.IndexToNode(to_index)
+        
+        travel_distance = data.distance_matrix[from_node][to_node]
+        fuel_cost = travel_distance * settings.fuel_factor / 100000
+        return int(fuel_cost)
+    
+    transit_callback_index = routing.RegisterTransitCallback(fuel_callback)
+    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+    
+    # Добавляем измерение времени (Time Windows)
+    routing.AddDimension(
+        transit_callback_index,
+        0,   
+        10000000,
+        True,
+        'Fuel')
+    
 
 def add_capacity_dimension(routing, manager, data: RoutingData, settings: RoutingSettingsData):
     logger.debug("add_capacity_dimension")
@@ -84,6 +102,9 @@ def add_capacity_dimension(routing, manager, data: RoutingData, settings: Routin
             settings.exceed_capacity_penalty
         )
     
+def set_vehicle_restrictions(routing, manager, data: RoutingData, settings: RoutingSettingsData):
+    for vehicle_id in range(data.num_vehicles):
+        routing.SetFixedCostOfVehicle(settings.vehicle_start_cost, vehicle_id)
 
 def solve_vrp(data: RoutingData, settings: RoutingSettingsData):
     logger.debug("solve_vrp")
@@ -94,7 +115,10 @@ def solve_vrp(data: RoutingData, settings: RoutingSettingsData):
         data.ends)
     routing = pywrapcp.RoutingModel(manager)
     
+    
+    set_vehicle_restrictions(routing, manager, data, settings)
     add_time_dimension(routing, manager, data, settings)
+    add_fuel_dimension(routing, manager, data, settings)
     add_capacity_dimension(routing, manager, data, settings)
 
     # Настройки поиска решения

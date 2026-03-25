@@ -3,7 +3,7 @@ import logging
 import json
 
 from .data_structure import CourierData, OrderData, Point, RoutingData, RoutingSettingsData
-from .osrm_client import compute_time_matrix
+from .osrm_client import compute_distance_matrix, compute_matrices, compute_time_matrix
 
 logger = logging.getLogger("delivery_distributor")
 
@@ -58,7 +58,7 @@ def create_data_model(orders: list[OrderData], couriers: list[CourierData], sett
     # - Финиши курьеров: n+num_vehicles .. n+2*num_vehicles-1
     # Тогда для каждого курьера задаём start_index и end_index.
     points = prepare_points(orders, couriers)
-    time_matrix = compute_time_matrix(points)
+    time_matrix, distance_matrix = compute_matrices(points)
 
 
     n_orders = len(orders)
@@ -91,6 +91,7 @@ def create_data_model(orders: list[OrderData], couriers: list[CourierData], sett
 
     return RoutingData(
         time_matrix=time_matrix,
+        distance_matrix=distance_matrix,
         demands=demands,
         time_windows=time_windows,
         service_times=service_times,

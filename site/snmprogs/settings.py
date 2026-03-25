@@ -55,7 +55,7 @@ LOGGING = {
         },
     },
     'root': {
-        'handlers': ['mail_admins', 'console'],
+        'handlers': ['mail_admins'],
         'level': 'ERROR',
     },
 }

@@ -21,6 +21,7 @@ def extract_solution(solution, manager, routing, orders, couriers):
     n_orders = len(orders)
     n_couriers = len(couriers)
     time_dimension = routing.GetDimensionOrDie("Time")
+    fuel_dimension = routing.GetDimensionOrDie("Fuel")
 
     results = []
 
@@ -46,7 +47,7 @@ def extract_solution(solution, manager, routing, orders, couriers):
 
         start_time = solution.Value(time_dimension.CumulVar(routing.Start(vehicle_id)))
         end_time = solution.Value(time_dimension.CumulVar(routing.End(vehicle_id)))
-
+        fuel_cost =     solution.Value(fuel_dimension.CumulVar(routing.End(vehicle_id)))
         if not route_nodes:
             continue
 
@@ -60,6 +61,7 @@ def extract_solution(solution, manager, routing, orders, couriers):
                 "end_time_seconds": end_time,
                 "span_time_seconds": end_time - start_time,
                 "waiting_time_seconds": total_waiting_time,
+                "fuel_cost": fuel_cost,
             }
         )
 
@@ -96,6 +98,7 @@ def make_context(results, orders):
             "end_time": datetime.timedelta(seconds=res["end_time_seconds"]),
             "span_time": datetime.timedelta(seconds=res["span_time_seconds"]),
             "waiting_time": datetime.timedelta(seconds=res["waiting_time_seconds"]),
+            "fuel_cost": res["fuel_cost"],
         }
         courier["orders"] = []
         for idx, order_node in enumerate(res["order_indices"]):
