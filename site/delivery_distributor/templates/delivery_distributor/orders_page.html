@@ -1,0 +1,29 @@
+{% extends "delivery_distributor/delivery_distributor_page_base.html" %}
+
+{% block breadcrumbs %}
+<p>
+    <a href="{% url "delivery_distributor:index" %}">Назад к выбору даты</a>
+</p>
+{% endblock  %}
+
+{% block content %}
+{{ block.super }}
+
+<div class="row mb-4">
+    <p>Заказов: {{ orders_count }}</p>
+    <p>Общий вес: {{ orders_weight }} кг.</p>
+</div>
+<div class="row mb-4">
+    <form method="post">
+        {% csrf_token %}
+        {% if formset.non_form_errors %}
+        <div class="alert alert-danger">
+            {{ formset.non_form_errors }}
+        </div>
+        {% endif %}
+    <table class="table w-100">
+        {% include "partials/formset.html" %}
+    </table>
+    <button class="btn" name="action" value="save" type="submit">Обновить</button>
+    <button class="btn btn-primary"name="action"  value="next" type="submit">Далее</button>
+{% endblock  %}

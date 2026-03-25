@@ -101,19 +101,23 @@ class IndexView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
     
     def form_valid(self, form):
         self.reset_session()
-        client = MoySkladClient(get_moy_sklad_token())
         geocoder = Geocoder()
-        project_filters = ["project!={}".format(project.meta.href) for project in self.__get_projects(client, projects_blacklist)]
-        date_filter = "deliveryPlannedMoment={}".format(format_moy_sklad_datetime(form.cleaned_data['date']))
-        filter = ";".join(project_filters + [date_filter])
-        orders = getters.walk_for_all(client, model.MoySkladCustomerOrder, filter=filter)
-        order_data = [self.__get_order_data(order, geocoder) for order in orders]
+        orders = self._get_moy_sklad_orders(form.cleaned_data['date'])
+        order_data = [self._get_order_data(order, geocoder) for order in orders]
         self.set_orders(order_data)
         return super().form_valid(form)
     
-    def __get_order_data(self, order: model.MoySkladCustomerOrder, geocoder: Geocoder):
+    def _get_moy_sklad_orders(self, date):
+        client = MoySkladClient(get_moy_sklad_token())
+        project_filters = ["project!={}".format(project.meta.href) for project in self.__get_projects(client, projects_blacklist)]
+        date_filter = "deliveryPlannedMoment={}".format(format_moy_sklad_datetime(date))
+        filter = ";".join(project_filters + [date_filter])
+        return getters.walk_for_all(client, model.MoySkladCustomerOrderExpandedPositionsAssortment, filter=filter, limit=99, expand="positions.assortment")
+
+    def _get_order_data(self, order: model.MoySkladCustomerOrderExpandedPositionsAssortment, geocoder: Geocoder):
         delivery_time = order.find_attribute_by_name('Время доставки') # TODO mode to settings
         delivery_time = delivery_time.value if delivery_time else ""
+        weight = sum(position.quantity * position.assortment.weight for position in order.positions.rows)
         start_time, end_time = parse_time_interval_safety(delivery_time)
         address = order.shipmentAddress
         location = geocoder.geocode(address)
@@ -122,7 +126,7 @@ class IndexView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
             name=order.name,
             point=point,
             address=order.shipmentAddress,
-            weight=10, # TODO add real data
+            weight=weight,
             start_time=start_time,
             end_time=end_time,
         )
@@ -137,7 +141,7 @@ class IndexView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
     
 
 class OrderDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
-    template_name = 'delivery_distributor/formset_page.html'
+    template_name = 'delivery_distributor/orders_page.html'
     form_class = OrderForm
     subtitle = "Детали заказов"
     success_url = reverse_lazy("delivery_distributor:couriers")
@@ -150,6 +154,13 @@ class OrderDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["geocoder"] = self.geocoder
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        kwargs = super().get_context_data(**kwargs)
+        orders = self.get_orders()
+        kwargs["orders_count"] = len(orders)
+        kwargs["orders_weight"] = sum(order.weight for order in orders)
         return kwargs
 
     def get_initial(self):

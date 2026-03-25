@@ -2,6 +2,7 @@ import logging
 from urllib.parse import urlencode
 from uuid import UUID
 from typing import TypeVar
+import json
 
 from .exceptions import MoySkladError, UnauthorizedRequestError
 from .client import MoySkladClient, make_url
@@ -30,8 +31,7 @@ def get_entities_by_href(client: MoySkladClient, entity_class: type, href: str, 
 
 def walk_for_href(client: MoySkladClient, entity_class: type, href: str, **kwargs):
     offset = 0
-    limit = 1000
-    kwargs["limit"] = limit
+    limit = kwargs.setdefault("limit", 1000)
     while True:
         kwargs["offset"] = offset
         entities = get_entities_by_href(client, entity_class, href, **kwargs)

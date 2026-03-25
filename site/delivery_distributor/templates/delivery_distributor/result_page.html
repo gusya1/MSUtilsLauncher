@@ -27,6 +27,7 @@
     <p>Длительность маршрута: {{ courier.span_time }} часов</p>
     <p>Общее время простоя: {{ courier.waiting_time }} часов</p>
     <p>Расход топлива: {{ courier.fuel_cost }} литров</p>
+    <p>Загрузка: {{ courier.capacity }} кг.</p>
     <table class="table">
         <thead>
             <tr>
@@ -57,11 +58,10 @@
 {% endblock  %}
 
 {% block extra_js %}
+<script>
+    get_routes_url = "{% url "delivery_distributor:get_routes" %}";
+</script>
 {% yandex_maps_on_load_script %}
 <script src="{% static "yandex_map/js/yandex_map.js" %}"></script>
-<script>
-    get_routes_url = "{% url "
-    delivery_distributor: get_routes " %}";
-</script>
 <script src="{% static "delivery_distributor/js/load_routes.js" %}"></script>
 {% endblock %}

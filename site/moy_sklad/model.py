@@ -1,5 +1,5 @@
 import enum
-from typing import Annotated, Any
+from typing import Annotated, Any, TypeVar
 from datetime import datetime, timezone, timedelta
 from uuid import UUID
 
@@ -327,11 +327,20 @@ class MoySkladState(BaseModel):
     meta: MoySkladMeta
     name: str
 
+class MoySkladAssortment(BaseModel):
+    id: UUID
+    meta: MoySkladMeta
+    name: str
+    weight: float = 0
+
 class MoySkladOrderPosition(BaseModel):
     assortment: MoySkladMetaField
     price: Kopeck
     quantity: float
     discount: DiscountFactor | None = None
+
+class MoySkladOrderPositionExpendedAssortment(MoySkladOrderPosition):
+    assortment: MoySkladAssortment
 
 class MoySkladCustomerOrderBase(MoySkladAttributesMixin, BaseModel):
     agent: MoySkladMetaField
@@ -351,6 +360,13 @@ class MoySkladCustomerOrderResponse(BaseModel):
 
 class MoySkladCustomerOrder(MoySkladCustomerOrderBase, MoySkladCustomerOrderResponse):
     pass
+
+class MoySkladOrderPositionsExpended(BaseModel):
+    meta: MoySkladMeta
+    rows: list[MoySkladOrderPositionExpendedAssortment]
+
+class MoySkladCustomerOrderExpandedPositionsAssortment(MoySkladCustomerOrder):
+    positions: MoySkladOrderPositionsExpended
 
 class MoySkladCustomerOrderCreate(MoySkladCustomerOrderBase):
     attributes: list[MoySkladAttributeCreate] = []

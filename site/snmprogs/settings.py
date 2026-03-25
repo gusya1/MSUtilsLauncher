@@ -53,6 +53,11 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'moysklad_sync': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
     'root': {
         'handlers': ['mail_admins'],

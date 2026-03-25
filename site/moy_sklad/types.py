@@ -3,7 +3,7 @@ from . import model
 
 
 def get_link_to_entity_collection(entity_class):
-    return {
+    class_map =  {
         model.MoySkladProduct: "entity/product",
         model.MoySkladVariant: "entity/variant",
         model.MoySkladProductFolder: "entity/productfolder",
@@ -18,7 +18,11 @@ def get_link_to_entity_collection(entity_class):
         model.MoySkladService: "entity/service",
         model.MoySkladBundle: "entity/bundle",
         model.MoySkladStore: "entity/store",
-    }[entity_class]
+    }
+    for class_name, link in class_map.items():
+        if issubclass(entity_class, class_name):
+            return link
+    raise ValueError("Unknown entity class")
 
 
 def get_link_to_entity_create(entity_class):

@@ -26,7 +26,7 @@ class OrderForm(forms.Form):
     address = forms.CharField(label='Адрес', widget=forms.Textarea(attrs={'rows': 3}))
     start_time = forms.TimeField(label='Ожидают с', widget=forms.TimeInput(format='%H:%M', attrs={'type': 'time'}))
     end_time = forms.TimeField(label='по', widget=forms.TimeInput(format='%H:%M', attrs={'type': 'time'}))
-    weight = forms.IntegerField(label='Вес (кг)')
+    weight = forms.FloatField(label='Вес (кг)')
 
     def __init__(self, *args, geocoder: Geocoder, **kwargs):
         self.geocoder = geocoder
@@ -49,7 +49,7 @@ class CourierForm(forms.Form):
     enable = forms.BooleanField(label='Кто везёт сегодня', required=False)
     name = forms.CharField(label='Имя')
     use_home_location = forms.BooleanField(label='Использовать локацию дома', required=False)
-    capacity = forms.IntegerField(label='Вместимость (кг)')
+    capacity = forms.FloatField(label='Вместимость (кг)')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
