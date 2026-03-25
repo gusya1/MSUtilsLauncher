@@ -2,8 +2,10 @@ import datetime
 import logging
 
 from django.db import models
-from root.models import SingletonModelMixin
 
+from colorful.fields import RGBColorField
+
+from root.models import SingletonModelMixin
 
 logger = logging.getLogger("delivery_distributor")
 
@@ -99,11 +101,33 @@ class DeliveryRoutingSettings(SingletonModelMixin, models.Model):
         ]
 
 
+def get_prefared_colors():
+    return [
+        "#82cdff",
+        "#1e98ff",
+        "#177bc9",
+        "#0e4779",
+        "#ffd21e",
+        "#ff931e",
+        "#e6761b",
+        "#ed4543",
+        "#56db40",
+        "#1bad03",
+        "#97a100",
+        "#595959",
+        "#b3b3b3",
+        "#f371d1",
+        "#b51eff",
+        "#793d0e",
+    ]
+
 class Courier(models.Model):
     config = models.ForeignKey(
         DeliveryRoutingSettings, on_delete=models.CASCADE, related_name="couriers"
     )
     name = models.CharField(max_length=255, unique=True, verbose_name="Имя")
+    color = RGBColorField(verbose_name="Цвет на карте", default="#000000", colors=get_prefared_colors())
+    project = models.CharField(max_length=255, blank=True, verbose_name="Проект в МС")
     home_location = models.ForeignKey(
         "yandex_geocoder.Location",
         null=True,

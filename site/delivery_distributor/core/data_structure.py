@@ -20,6 +20,8 @@ class CourierData(pydantic.BaseModel):
     start: Point
     capacitiy: float # кг
     name: str = ""
+    project: str = ""
+    color: str = "#000000"
 
 class RoutingSettingsData(pydantic.BaseModel):
     traffic_factor: float = 0

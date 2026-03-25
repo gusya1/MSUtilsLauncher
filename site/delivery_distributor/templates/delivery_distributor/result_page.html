@@ -21,7 +21,7 @@
 </div>
 <div class="row mb-4">
     {% for courier in couriers %}
-    <h4>{{ courier.name }}</h4>
+    <h4><span style="color: {{ courier.color }}">⬤</span> {{ courier.name }}</h4>
     <p>Начало маршрута: {{ courier.start_time }}</p>
     <p>Конец маршрута: {{ courier.end_time }}</p>
     <p>Длительность маршрута: {{ courier.span_time }} часов</p>
@@ -49,6 +49,12 @@
         </tbody>
     </table>
     {% endfor %}
+</div>
+<div class="row mb-4">
+    <form method="post">
+        {% csrf_token %}
+        <button class="btn btn-primary" type="submit">Загрузить в мой склад</button>
+    </form>
 </div>
 {% else %}
 <p>Решение не найдено =(. <a href="{% url "delivery_distributor:routing_details" %}">Назад к деталям маршрутизации</a>

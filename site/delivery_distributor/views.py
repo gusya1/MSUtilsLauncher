@@ -187,7 +187,7 @@ class CourierDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
     form_class = CourierForm
     subtitle = "Детали курьеров"
     success_url = reverse_lazy("delivery_distributor:routing_details")
-    factory_kwargs = {'extra': 2, 'max_num': None, 'can_order': False, 'can_delete': True}
+    factory_kwargs = {'extra': 1, 'max_num': None, 'can_order': False, 'can_delete': True}
 
     def get_initial(self):
         couriers = self.get_couriers() or self.__get_couriers_by_settings()
@@ -197,6 +197,8 @@ class CourierDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
             data.append({
                 "enable": courier.enable,
                 "name": courier.name,
+                "project": courier.project,
+                "color": courier.color,
                 "use_home_location": courier.end is not None,
                 "capacity": courier.capacitiy
             })
@@ -227,7 +229,9 @@ class CourierDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
         if use_home_location and (courier is None or courier.home_location is None):
                 form.add_error("use_home_location", "Нельзя установить домашнюю локацию для этого курьера")
         return CourierData(enable=data["enable"],
-                           name=data["name"], 
+                           name=data["name"],
+                           project=data["project"], 
+                           color=data["color"],
                            start=make_point_by_location(settings.store_location), 
                            end=make_point_by_location(courier.home_location) if use_home_location and courier else None,
                            capacitiy=data["capacity"])
@@ -238,7 +242,9 @@ class CourierDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
         couriers = []
         for courier_settings in couriers_settings:
             courier_settings: Courier
-            couriers.append(CourierData(name=courier_settings.name, 
+            couriers.append(CourierData(name=courier_settings.name,
+                                        project=courier_settings.project,
+                                        color=courier_settings.color, 
                                         start=make_point_by_location(settings.store_location), 
                                         end=make_point_by_location(courier_settings.home_location) if courier_settings.home_location else None,
                                         capacitiy=courier_settings.capacity))
@@ -341,9 +347,10 @@ class ResultsView(AppViewMixin, DeliveryRutingSessionMixin, TemplateView):
     def get_context_data(self,*args, **kwargs):
         context = super().get_context_data(*args,**kwargs)
         orders = self.get_orders()
+        couriers = self.get_enabled_couriers()
         results = self.get_results()
         if results:
-            context.update(make_context(results, orders))
+            context.update(make_context(results, orders, couriers))
         return context
 
 
@@ -354,5 +361,5 @@ class GetGeojsonRoutesView(DeliveryRutingSessionMixin, View):
         couriers = self.get_enabled_couriers()
         return JsonResponse({
             "routes": export_routes_lines_to_geojson(results, orders, couriers),
-            "points": export_route_points(results, orders) + export_courier_break_points(results, couriers)
+            "points": export_route_points(results, orders, couriers) + export_courier_break_points(results, couriers)
         })

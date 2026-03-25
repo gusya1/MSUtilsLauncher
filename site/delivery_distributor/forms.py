@@ -5,6 +5,8 @@ import re
 from django import forms
 from django.forms import ModelForm
 
+from colorful.fields import RGBColorField
+
 from yandex_geocoder.geocoder import Geocoder
 from yandex_geocoder.models import Location
 
@@ -48,6 +50,8 @@ class OrderForm(forms.Form):
 class CourierForm(forms.Form):
     enable = forms.BooleanField(label='Кто везёт сегодня', required=False)
     name = forms.CharField(label='Имя')
+    project = forms.CharField(label='Проект')
+    color = forms.CharField(label="Цвет на карте", initial="", widget=forms.TextInput(attrs={'type': 'color'}))
     use_home_location = forms.BooleanField(label='Использовать локацию дома', required=False)
     capacity = forms.FloatField(label='Вместимость (кг)')
 
@@ -67,6 +71,13 @@ class CourierForm(forms.Form):
 
         if not courier or not courier.home_location:
             self.fields["use_home_location"].disabled = True
+
+    def clean_color(self):
+        color = self.cleaned_data.get('color')
+        # Если цвет не выбран (пришло '#000000'), считаем его пустым
+        if color == '#000000':
+            return None            # или None, в зависимости от модели
+        return color
 
 class DeliveryRoutingSettingsForm(ModelForm):
     class Meta:

@@ -93,12 +93,13 @@ def print_routes(results, orders):
             )
 
 
-def make_context(results, orders):
+def make_context(results, orders, couriers: list[CourierData]):
     context = {}
     context["couriers"] = []
     for res in results:
         courier = {
             "name": res["courier_name"],
+            "color": couriers[res["courier_id"]].color,
             "start_time": datetime.timedelta(seconds=res["start_time_seconds"]),
             "end_time": datetime.timedelta(seconds=res["end_time_seconds"]),
             "span_time": datetime.timedelta(seconds=res["span_time_seconds"]),
@@ -123,9 +124,6 @@ def make_context(results, orders):
             )
         context["couriers"].append(courier)
     return context
-
-
-colors = ["#FF0000", "#00FF00", "#0000FF", "#800080", "#FFC0CB", "#00FFFF"]
 
 
 def export_routes_lines_to_geojson(
@@ -174,7 +172,7 @@ def export_routes_lines_to_geojson(
                 "type": "Feature",
                 "geometry": {"type": "LineString", "coordinates": line_coords},
                 "style": {
-                    "stroke": [{"width": 2, "color": colors[courier_id % len(colors)]}],
+                    "stroke": [{"width": 2, "color": couriers[courier_id].color}],
                 },
                 "properties": {
                     "type": "route",
@@ -211,7 +209,7 @@ def get_marker_html(content, color) -> str:
     """
 
 
-def export_route_points(results: list[dict], orders: list[OrderData]):
+def export_route_points(results: list[dict], orders: list[OrderData], couriers: list[CourierData]):
     points = []
 
     # 2. Точки заказов
@@ -238,7 +236,7 @@ def export_route_points(results: list[dict], orders: list[OrderData]):
                 "id": order.name,
                 "coordinates": [order.point.longitude, order.point.latitude],
                 "html": get_marker_html(
-                    order_info["number"], colors[order_info["courier_id"] % len(colors)]
+                    order_info["number"], couriers[order_info["courier_id"]].color
                 ),
             }
         )
@@ -253,12 +251,12 @@ def export_courier_break_points(results: list[dict], couriers: list[CourierData]
         points.append({
             "id": "start_point_{}".format(courier.name),
             "coordinates": [courier.start.longitude, courier.start.latitude],
-            "html": get_marker_html("S", colors[res["courier_id"] % len(colors)]),
+            "html": get_marker_html("S", courier.color),
         })
         if courier.end:
             points.append({
                 "id": "end_point_{}".format(courier.name),
                 "coordinates": [courier.end.longitude, courier.end.latitude],
-                "html": get_marker_html("F", colors[res["courier_id"] % len(colors)]),
+                "html": get_marker_html("F", courier.color),
             })
     return points
