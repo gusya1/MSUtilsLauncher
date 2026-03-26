@@ -51,9 +51,10 @@
     {% endfor %}
 </div>
 <div class="row mb-4">
-    <form method="post">
+    <form method="post" action="{% url 'courier_data_loader:process' %}">
         {% csrf_token %}
-        <button class="btn btn-primary" type="submit">Загрузить в мой склад</button>
+        <input type="hidden" name="payload" value='{{ orders_json|safe }}'/>
+        <button class="btn btn-primary" type="submit">Загрузить в Мой Склад</button>
     </form>
 </div>
 {% else %}

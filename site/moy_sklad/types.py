@@ -35,6 +35,7 @@ def get_link_to_entity_create(entity_class):
 def get_link_to_entity_update(entity_class, id: UUID):
     return {
         model.MoySkaldCounterpartyBase: "entity/counterparty/{}",
+        model.MoySkladCustomerOrderUpdate: "entity/customerorder/{}",
     }[entity_class].format(id)
 
 def get_response_class_by_create_class(entity_class):
@@ -47,4 +48,5 @@ def get_response_class_by_create_class(entity_class):
 def get_response_class_by_base_class(entity_class):
     return {
         model.MoySkaldCounterpartyBase: model.MoySkaldCounterparty,
+        model.MoySkladCustomerOrderUpdate: model.MoySkladCustomerOrder,
     }[entity_class]

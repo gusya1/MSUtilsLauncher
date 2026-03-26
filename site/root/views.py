@@ -9,6 +9,17 @@ from .apps import SnmAppBase
 
 logger = logging.getLogger("django")
 
+class AppViewMixin:
+    subtitle= ""
+    title = ""
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = self.title
+        context['subtitle'] = self.subtitle
+        return context
+
+
 def index(request):
     snm_apps_list = []
     for app in apps.get_app_configs():

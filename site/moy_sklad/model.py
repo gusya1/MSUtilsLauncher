@@ -368,6 +368,13 @@ class MoySkladOrderPositionsExpended(BaseModel):
 class MoySkladCustomerOrderExpandedPositionsAssortment(MoySkladCustomerOrder):
     positions: MoySkladOrderPositionsExpended
 
+class MoySkladCustomerOrderUpdate(MoySkladCustomerOrderBase):
+    agent: MoySkladMetaField | None = None
+    organization: MoySkladMetaField | None = None
+    shipmentAddress: str | None = None
+    attributes: list[MoySkladAttributeCreate] = []
+    positions: list[MoySkladOrderPosition] = []
+
 class MoySkladCustomerOrderCreate(MoySkladCustomerOrderBase):
     attributes: list[MoySkladAttributeCreate] = []
     positions: list[MoySkladOrderPosition] = []

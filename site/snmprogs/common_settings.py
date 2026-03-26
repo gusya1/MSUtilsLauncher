@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'delivery_map_creator',
     'delivery_map_loader',
     'delivery_distributor',
+    'courier_data_loader',
     'yandex_map',
 ]
 

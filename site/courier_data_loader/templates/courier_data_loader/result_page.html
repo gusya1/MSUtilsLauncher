@@ -1,0 +1,30 @@
+{% extends "base_app_page.html" %}
+
+
+{% block content %}
+<div class="row mb-4">
+    {% if status %}
+    <h3>Статус: {{ status }}</h3>
+    {% else %}
+    <h3>Операция не найдена</h3>
+    {% endif %}
+</div>
+<div class="row mb-4">
+    {% if error_list %}
+        <h4>Ошибки</h4>
+        <ul>
+        {% for error in error_list %}
+            <li>{{ error }}</li>    
+        {% endfor %}
+        </ul>
+    {% endif %}
+    {% if change_list %}
+        <h4>Изменения</h4>
+        <ul>
+        {% for change in change_list %}
+            <li>{{ change }}</li>    
+        {% endfor %}
+        </ul>
+    {% endif %}
+</div>
+{% endblock  %}

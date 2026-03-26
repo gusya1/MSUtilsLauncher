@@ -16,10 +16,12 @@ from moy_sklad import model
 from moy_sklad.client import MoySkladClient
 from moy_sklad.utils import format_moy_sklad_datetime
 
+from courier_data_loader.core.data_structure import OrdersCourierData
+
 from yandex_geocoder.geocoder import Geocoder
 from yandex_geocoder.models import Location
 
-from .core.solution_processor import export_courier_break_points, export_route_points, export_routes_lines_to_geojson, extract_solution, make_context
+from .core.solution_processor import export_courier_break_points, export_route_points, export_routes_lines_to_geojson, extract_solution, make_context, make_orders_courrier_load_data
 from .core.delivery_data_preparator import create_data_model
 from .core.solver import solve_vrp
 from .core.time_intervals_identifier import parse_time_interval_safety
@@ -349,6 +351,9 @@ class ResultsView(AppViewMixin, DeliveryRutingSessionMixin, TemplateView):
         orders = self.get_orders()
         couriers = self.get_enabled_couriers()
         results = self.get_results()
+
+        context["orders_json"] = make_orders_courrier_load_data(results, orders, couriers).model_dump_json()
+
         if results:
             context.update(make_context(results, orders, couriers))
         return context

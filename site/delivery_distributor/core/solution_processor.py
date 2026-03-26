@@ -1,6 +1,8 @@
 import datetime
 import logging
 
+from courier_data_loader.core.data_structure import OrderCourierData, OrdersCourierData
+
 from .data_structure import CourierData, OrderData
 from .delivery_data_preparator import prepare_points
 
@@ -91,6 +93,21 @@ def print_routes(results, orders):
             print(
                 f"     Окно доставки: {window_start.strftime('%H:%M')} - {window_end.strftime('%H:%M')}"
             )
+
+
+def make_orders_courrier_load_data(results, orders: list[OrderData], couriers: list[CourierData]) -> OrdersCourierData:
+    orders_data = []
+    for res in results:
+        courier = couriers[res["courier_id"]]
+        for idx, order_node in enumerate(res["order_indices"]):
+            order = orders[order_node]
+            orders_data.append(OrderCourierData(
+                order_name=order.name,
+                project=courier.project,
+                delivery_order_number=idx+1
+            ))
+    return OrdersCourierData(orders=orders_data)
+
 
 
 def make_context(results, orders, couriers: list[CourierData]):
