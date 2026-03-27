@@ -15,18 +15,17 @@
 <body>
   <div class="container">
     <div class="row">
-      <div class="col-lg-10">
+      <div class="col-sm-8">
         <div class="m-4">
           <h1><a class="text-decoration-none text-reset" href="/">S.O.B.A.K.A.N.A.M.Y.A.S.E</a></h1>
           <p>Добро пожаловать в SNM Script launcher</p>
         </div>
       </div>
-      <div class="col-lg-2">
-        <div class="m-4">
+      <div class="col-sm-4">
+        <div class="m-4 text-end">
           {% if user.is_authenticated %}
-            <p>Приевет, {{ user.get_username }}. </p>
-            <p>Спасибо что зашёл)</p>
-            <p><a href="{% url 'logout' %}">Выход</a></p>
+            <p>Привет, {{ user.get_username }}. {% if user.is_staff %}<a href="{% url 'admin:index' %}">Админка</a>{% endif %}</p>
+            <p>Спасибо что зашёл) <a href="{% url 'logout' %}">Выход</a></p>
           {% else %}
             <p>Ты это, заходи если что.</p>
             <p><a href="{% url 'login' %}">Вход</a></p>
