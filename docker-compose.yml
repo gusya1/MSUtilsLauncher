@@ -11,6 +11,10 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
     restart: unless-stopped
+  redis:
+    image: redis:7
+    container_name: snmprogs_redis
+    restart: unless-stopped
   web:
     build: ./site
     container_name: snmprogs_web
@@ -20,10 +24,25 @@ services:
       - media_volume:/app/media
     depends_on:
       - db
+      - redis
+    env_file:
+      - .env
+    restart: unless-stopped
+  celery:
+    build: ./site
+    container_name: snmprogs_celery
+    volumes:
+      - ./site:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+    depends_on:
+      - db
+      - redis
+      - web
     env_file:
       - .env
     environment:
-      - TZ=Europe/Moscow
+      - DJANGO_SERVER_TYPE=celery
     restart: unless-stopped
   osrm:
     image: osrm/osrm-backend:latest

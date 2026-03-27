@@ -16,6 +16,10 @@ case "$DJANGO_MODE" in
         echo "Starting Django runserver..."
         exec python manage.py runserver 0.0.0.0:8000
         ;;
+    celery)
+        echo "Starting celery..."
+        celery -A snmprogs worker --loglevel=info
+        ;;
     *)
         echo "Unknown DJANGO_SERVER_TYPE: $DJANGO_MODE. Exiting."
         exit 1

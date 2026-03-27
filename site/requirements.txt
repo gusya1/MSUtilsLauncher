@@ -11,3 +11,6 @@ django_extra_views>=0.16.0
 ortools>=9.15.6755
 django-widget-tweaks>=1.5.1
 psycopg2-binary>=2.9.11
+django-redis>=5.0.0
+redis>=7.4.0
+celery>=5.6.3
