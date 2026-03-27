@@ -1,33 +1,18 @@
-"""
-snmprogs URL Configuration.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/3.2/topics/http/urls/
-
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-
-"""
 from django.urls import path
+from django.contrib.auth.decorators import permission_required
 
 from . import views
 
 app_name = 'delivery_distributor'
 
+app_permission = 'delivery_distributor.can_make_delivery_routing'
+
 urlpatterns = [
-    path('', views.IndexView.as_view(), name='index'),
-    path('orders', views.OrderDetailsView.as_view(), name='orders'),
-    path('couriers', views.CourierDetailsView.as_view(), name='couriers'),
-    path('routing-details', views.RoutingDetailsView.as_view(), name='routing_details'),
-    path('process', views.ProcessView.as_view(), name='process'),
-    path('results', views.ResultsView.as_view(), name='results'),
-    path('get-routes', views.GetGeojsonRoutesView.as_view(), name='get_routes'),
+    path('', permission_required(app_permission)(views.IndexView.as_view()), name='index'),
+    path('orders', permission_required(app_permission)(views.OrderDetailsView.as_view()), name='orders'),
+    path('couriers', permission_required(app_permission)(views.CourierDetailsView.as_view()), name='couriers'),
+    path('routing-details', permission_required(app_permission)(views.RoutingDetailsView.as_view()), name='routing_details'),
+    path('process', permission_required(app_permission)(views.ProcessView.as_view()), name='process'),
+    path('results', permission_required(app_permission)(views.ResultsView.as_view()), name='results'),
+    path('get-routes', permission_required(app_permission)(views.GetGeojsonRoutesView.as_view()), name='get_routes'),
 ]

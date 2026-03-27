@@ -372,12 +372,12 @@ class MoySkladCustomerOrderUpdate(MoySkladCustomerOrderBase):
     agent: MoySkladMetaField | None = None
     organization: MoySkladMetaField | None = None
     shipmentAddress: str | None = None
-    attributes: list[MoySkladAttributeCreate] = []
-    positions: list[MoySkladOrderPosition] = []
+    attributes: list[MoySkladAttributeCreate] | None = None
+    positions: list[MoySkladOrderPosition] | None = None
 
 class MoySkladCustomerOrderCreate(MoySkladCustomerOrderBase):
-    attributes: list[MoySkladAttributeCreate] = []
-    positions: list[MoySkladOrderPosition] = []
+    attributes: list[MoySkladAttributeCreate] | None = None
+    positions: list[MoySkladOrderPosition] | None = None
 
 class MoySkladOrganization(BaseModel):
     id: UUID

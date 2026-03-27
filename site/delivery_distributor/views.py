@@ -10,6 +10,7 @@ from django.views.generic.detail import DetailView
 from extra_views import FormSetView
 from numpy import add
 
+from moy_sklad_settings.models import MoySkladSettings
 from moy_sklad_settings.utils import get_moy_sklad_token
 from moy_sklad import getters
 from moy_sklad import model
@@ -104,8 +105,9 @@ class IndexView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
     def form_valid(self, form):
         self.reset_session()
         geocoder = Geocoder()
+        settings = MoySkladSettings.get_solo()
         orders = self._get_moy_sklad_orders(form.cleaned_data['date'])
-        order_data = [self._get_order_data(order, geocoder) for order in orders]
+        order_data = [self._get_order_data(order, geocoder, settings) for order in orders]
         self.set_orders(order_data)
         return super().form_valid(form)
     
@@ -116,8 +118,8 @@ class IndexView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
         filter = ";".join(project_filters + [date_filter])
         return getters.walk_for_all(client, model.MoySkladCustomerOrderExpandedPositionsAssortment, filter=filter, limit=99, expand="positions.assortment")
 
-    def _get_order_data(self, order: model.MoySkladCustomerOrderExpandedPositionsAssortment, geocoder: Geocoder):
-        delivery_time = order.find_attribute_by_name('Время доставки') # TODO mode to settings
+    def _get_order_data(self, order: model.MoySkladCustomerOrderExpandedPositionsAssortment, geocoder: Geocoder, settings: MoySkladSettings):
+        delivery_time = order.find_attribute_by_name(settings.delivery_time_attribute_name)
         delivery_time = delivery_time.value if delivery_time else ""
         weight = sum(position.quantity * position.assortment.weight for position in order.positions.rows)
         start_time, end_time = parse_time_interval_safety(delivery_time)
