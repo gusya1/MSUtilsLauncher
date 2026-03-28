@@ -2,7 +2,7 @@
 set -e
 
 # URL для скачивания (регион Санкт-Петербург и ЛО)
-URL="https://download.geofabrik.de/europe/russia/saint-petersburg-and-leningrad-oblast-latest.osm.pbf"
+URL="https://download.geofabrik.de/russia/northwestern-fed-district-latest.osm.pbf"
 OUTPUT_DIR="osrm"
 OUTPUT_FILE="$OUTPUT_DIR/map.osm.pbf"
 

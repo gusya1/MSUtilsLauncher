@@ -28,6 +28,9 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+    networks:
+      - nginx_network
+      - msutilslauncher_default
   celery:
     build: ./site
     container_name: snmprogs_celery
@@ -68,3 +71,8 @@ volumes:
   postgres_volume:
   static_volume:
   media_volume:
+networks:
+  nginx_network:
+    external: true
+  msutilslauncher_default:
+    external: true

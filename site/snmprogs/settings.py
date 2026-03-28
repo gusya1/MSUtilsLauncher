@@ -19,11 +19,14 @@ BASE_DIR = os.path.dirname(PROJECT_DIR)
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'cg#p$g+j9tax!#a3cup@1$8obt2_+&k3q+pmu)5%asj6yjpkag')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
+CSRF_COOKIE_SECURE = True  # если используешь HTTPS
+CSRF_TRUSTED_ORIGINS = ['https://snmprogs.sobakanamyase.ru']
+
 ALLOWED_HOSTS = ['*']
 
 ADMINS = [('Сергей', 'serheos@gmail.com')]
 
-LOG_LEVEL = 'INFO' #os.environ.get('DJANGO_LOG_LEVEL', 'INFO')
+LOG_LEVEL = os.environ.get('DJANGO_LOG_LEVEL', 'INFO')
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

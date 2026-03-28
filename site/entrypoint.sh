@@ -18,7 +18,7 @@ case "$DJANGO_MODE" in
         ;;
     celery)
         echo "Starting celery..."
-        celery -A snmprogs worker --loglevel=info
+        celery -A snmprogs worker -c 1 --max-tasks-per-child=50 --prefetch-multiplier=1 --loglevel=info
         ;;
     *)
         echo "Unknown DJANGO_SERVER_TYPE: $DJANGO_MODE. Exiting."
