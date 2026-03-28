@@ -128,7 +128,7 @@ def solve_vrp(data: RoutingData, settings: RoutingSettingsData):
     search_parameters.local_search_metaheuristic = (
         routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
     search_parameters.time_limit.seconds = settings.max_process_time_sec # лимит времени на поиск
-    # search_parameters.log_search = True
+    search_parameters.log_search = True
 
     solution = routing.SolveWithParameters(search_parameters)
     return solution, manager, routing
