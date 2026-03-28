@@ -2,10 +2,12 @@ import logging
 import datetime
 
 from django.shortcuts import redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.generic import FormView, TemplateView, View
 from django.http import JsonResponse
 from django.views.generic.detail import DetailView
+
+from celery.result import AsyncResult
 
 from extra_views import FormSetView
 from numpy import add
@@ -27,6 +29,7 @@ from .core.delivery_data_preparator import create_data_model
 from .core.solver import solve_vrp
 from .core.time_intervals_identifier import parse_time_interval_safety
 from .core.data_structure import CourierData, OrderData, Point, RoutingSettingsData
+from .tasks import solve_vrp_task
 from .apps import DeliveryDistributorConfig
 from .forms import CourierForm, DateChooseForm, DeliveryRoutingSettingsForm, OrderForm
 from .models import Courier, DeliveryRoutingSettings
@@ -338,11 +341,10 @@ class ProcessView(DeliveryRutingSessionMixin, View):
         settings = self.get_settings()
         couriers = self.get_enabled_couriers()
         data = create_data_model(orders, couriers, settings)
-        solution, manager, routing = solve_vrp(data, settings)
-        if solution:
-            self.set_results(extract_solution(solution, manager, routing, orders, couriers))
-
-        return redirect(reverse_lazy('delivery_distributor:results'))
+        task = solve_vrp_task.delay(data.model_dump_json(), settings.model_dump_json())
+        return redirect(
+            f"{reverse('delivery_distributor:results')}?task_id={task.id}"
+        )
     
 class ResultsView(AppViewMixin, DeliveryRutingSessionMixin, TemplateView):
     template_name = 'delivery_distributor/result_page.html'
@@ -352,9 +354,17 @@ class ResultsView(AppViewMixin, DeliveryRutingSessionMixin, TemplateView):
         context = super().get_context_data(*args,**kwargs)
         orders = self.get_orders()
         couriers = self.get_enabled_couriers()
-        results = self.get_results()
+        task_id = self.request.GET.get("task_id")
+        results = []
 
         context["orders_json"] = make_orders_courrier_load_data(results, orders, couriers).model_dump_json()
+        if task_id:
+            task_result = AsyncResult(task_id)
+            if task_result.ready():
+                results = task_result.get()
+                self.set_results(results)
+            else:
+                context["processing"] = True
 
         if results:
             context.update(make_context(results, orders, couriers))

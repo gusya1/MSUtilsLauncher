@@ -58,7 +58,15 @@
     </form>
 </div>
 {% else %}
-<p>Решение не найдено =(. <a href="{% url "delivery_distributor:routing_details" %}">Назад к деталям маршрутизации</a>
+    {% if processing %}
+        <p>Оптимизация маршрутов выполняется...</p>
+
+        <script>
+            setTimeout(() => location.reload(), 3000);
+        </script>
+    {% else %}
+        <p>Решение не найдено =(. <a href="{% url "delivery_distributor:routing_details" %}">Назад к деталям маршрутизации</a>
+    {% endif %}
 </p>
 {% endif %}
 

@@ -18,17 +18,14 @@ def seconds_to_time(seconds: int) -> datetime.time:
     return result_time.time()
 
 
-def extract_solution(solution, manager, routing, orders, couriers):
-
-    n_orders = len(orders)
-    n_couriers = len(couriers)
+def extract_solution(solution, manager, routing):
     time_dimension = routing.GetDimensionOrDie("Time")
     fuel_dimension = routing.GetDimensionOrDie("Fuel")
     capacity_dimension = routing.GetDimensionOrDie("Capacity")
 
     results = []
 
-    for vehicle_id in range(n_couriers):
+    for vehicle_id in range(routing.vehicles()):
 
         index = routing.Start(vehicle_id)
 
@@ -42,7 +39,7 @@ def extract_solution(solution, manager, routing, orders, couriers):
             waiting_time = solution.Value(time_dimension.SlackVar(index))
             total_waiting_time += waiting_time
 
-            if node < n_orders:
+            if not routing.IsStart(index):
                 route_nodes.append(node)
                 arrival_times.append(arrival_time)
 
@@ -60,7 +57,6 @@ def extract_solution(solution, manager, routing, orders, couriers):
         results.append(
             {
                 "courier_id": vehicle_id,
-                "courier_name": couriers[vehicle_id].name,
                 "order_indices": route_nodes,
                 "arrival_times_seconds": arrival_times,
                 "start_time_seconds": start_time,
@@ -73,26 +69,6 @@ def extract_solution(solution, manager, routing, orders, couriers):
         )
 
     return results
-
-
-def print_routes(results, orders):
-    for res in results:
-        print(f"\nКурьер: {res['courier_name']}")
-        print(f"Начало маршрута: {res['start_time_seconds'] / 3600:.2f} часов")
-        print(f"Конец маршрута: {res['end_time_seconds'] / 3600:.2f} часов")
-        print(f"Общее время маршрута: {res['span_time_seconds'] / 3600:.2f} часов")
-        print("Заказы (в порядке посещения):")
-        for idx, order_node in enumerate(res["order_indices"]):
-            order = orders[order_node]
-            arrival = res["arrival_times_seconds"][idx]
-            arrival_time = seconds_to_time(arrival)
-            window_start = order.start_time
-            window_end = order.end_time
-            print(f"  {idx+1}. {order.address}")
-            print(f"     Время прибытия: {arrival_time.strftime('%H:%M')}")
-            print(
-                f"     Окно доставки: {window_start.strftime('%H:%M')} - {window_end.strftime('%H:%M')}"
-            )
 
 
 def make_orders_courrier_load_data(results, orders: list[OrderData], couriers: list[CourierData]) -> OrdersCourierData:
@@ -114,9 +90,10 @@ def make_context(results, orders, couriers: list[CourierData]):
     context = {}
     context["couriers"] = []
     for res in results:
-        courier = {
-            "name": res["courier_name"],
-            "color": couriers[res["courier_id"]].color,
+        courier = couriers[res["courier_id"]]
+        courier_data = {
+            "name": courier.name,
+            "color": courier.color,
             "start_time": datetime.timedelta(seconds=res["start_time_seconds"]),
             "end_time": datetime.timedelta(seconds=res["end_time_seconds"]),
             "span_time": datetime.timedelta(seconds=res["span_time_seconds"]),
@@ -124,14 +101,14 @@ def make_context(results, orders, couriers: list[CourierData]):
             "fuel_cost": res["fuel_cost"],
             "capacity": res["capacity"],
         }
-        courier["orders"] = []
+        courier_data["orders"] = []
         for idx, order_node in enumerate(res["order_indices"]):
             order = orders[order_node]
             arrival = res["arrival_times_seconds"][idx]
             arrival_time = seconds_to_time(arrival)
             window_start = order.start_time
             window_end = order.end_time
-            courier["orders"].append(
+            courier_data["orders"].append(
                 {
                     "address": order.address,
                     "arrival_time": arrival_time,
@@ -139,7 +116,7 @@ def make_context(results, orders, couriers: list[CourierData]):
                     "window_end": window_end,
                 }
             )
-        context["couriers"].append(courier)
+        context["couriers"].append(courier_data)
     return context
 
 
