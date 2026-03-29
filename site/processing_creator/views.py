@@ -11,7 +11,7 @@ from .apps import ProcessingCreatorConfig as App
 @permission_required('processing_creator.can_create_processing')
 def index(request):
     form = forms.DateChooseForm()
-    return render(request, 'base_app_page.html',
+    return render(request, 'base_form_page.html',
                   {
                       'title': App.verbose_name,
                       'form': form,

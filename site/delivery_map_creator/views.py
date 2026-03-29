@@ -11,7 +11,7 @@ from .apps import DeliveryMapCreatorConfig as App
 @permission_required('delivery_map_creator.can_generate_delivery_map')
 def index(request):
     form = forms.DateChooseForm()
-    return render(request, 'base_app_page.html',
+    return render(request, 'base_form_page.html',
                   {
                       'title': App.verbose_name,
                       'form': form,

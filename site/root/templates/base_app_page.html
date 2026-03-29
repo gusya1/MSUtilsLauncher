@@ -1,18 +1,6 @@
 {% extends "base_generic.html" %}
 
-{% block page_title %}
-  <h2>{{ title }}</h2>
-  <h3>{{ subtitle }}</h3>
-{% endblock %}
-
 {% block content %}
-<table>
-  <tr>
-    <td>
-      <h2>{{ title }}</h2>
-    </td>
-  </tr>
-</table>
   <div class="col-sm-6">
     <form enctype={{ enctype|default:"application/x-www-form-urlencoded" }} method={{ method|default:"get" }} action={{ url_target }}>
     {% csrf_token %}

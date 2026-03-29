@@ -2,10 +2,6 @@
 
 {% block content %}
 <div class="row mb-4">
-  <h2>{{ title }}</h2>
-  <h3>{{ subtitle }}</h3>
-</div>
-<div class="row mb-4">
   {% block top_content %}
   {% endblock  %}
 </div>
@@ -14,10 +10,10 @@
     <form method="post">
       {% csrf_token %}
       {% block form_content %}
-      <table>
+      <table class="mb-4">
         {{ form.as_table }}
       </table>
-      <input class="btn" type="submit"></input>
+      <input class="btn btn-primary" type="submit"></input>
       {% endblock  %}
     </form>
   </div>

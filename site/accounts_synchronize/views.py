@@ -10,7 +10,7 @@ from .apps import AccountsSyncConfig as App
 @permission_required('accounts_synchronize.can_syncronize_accounts')
 def index(request):
     form = forms.DateChooseForm()
-    return render(request, 'base_app_page.html',
+    return render(request, 'base_form_page.html',
                   {
                       'title': App.verbose_name,
                       'form': form,

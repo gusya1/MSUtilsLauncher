@@ -29,7 +29,7 @@ def filter_not_empty_value(data):
 @permission_required('delivery_map_loader.can_load_delivery_map')
 def index(request):
     form = GeoJsonFileChooseForm()
-    return render(request, 'base_app_page.html',
+    return render(request, 'base_form_page.html',
                   {
                       'title': App.verbose_name,
                       'form': form,

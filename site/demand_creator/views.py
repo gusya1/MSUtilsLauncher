@@ -10,7 +10,7 @@ from .apps import DemandCreatorConfig as App
 @permission_required('demand_creator.can_create_demand')
 def index(request):
     form = forms.DateChooseForm()
-    return render(request, 'base_app_page.html',
+    return render(request, 'base_form_page.html',
                   {
                       'title': App.verbose_name,
                       'form': form,
