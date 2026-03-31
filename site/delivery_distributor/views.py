@@ -137,6 +137,14 @@ class DeliveryRoutingCacheMixin:
     def get_results(self):
         return self._get_cache_data().get("results", [])
 
+    # ---------------- async ----------------
+
+    def set_task_id(self, task_id: uuid):
+        self._update_cache("task_id", task_id)
+
+    def get_task_id(self) -> uuid:
+        return self._get_cache_data().get("task_id", None)
+
     # ---------------- reset ----------------
 
     def reset_cache(self):
@@ -401,8 +409,9 @@ class ProcessView(DeliveryRoutingCacheMixin, View):
         couriers = self.get_enabled_couriers()
         data = create_data_model(orders, couriers, settings)
         task = solve_vrp_task.delay(data.model_dump_json(), settings.model_dump_json())
+        self.set_task_id(task.id)
         return redirect(
-            f"{self.reverse_with_cache('delivery_distributor:results')}?task_id={task.id}"
+            f"{self.reverse_with_cache('delivery_distributor:results')}"
         )
     
 class ResultsView(AppViewMixin, DeliveryRoutingCacheMixin, TemplateView):
@@ -413,7 +422,7 @@ class ResultsView(AppViewMixin, DeliveryRoutingCacheMixin, TemplateView):
         context = super().get_context_data(*args,**kwargs)
         orders = self.get_orders()
         couriers = self.get_enabled_couriers()
-        task_id = self.request.GET.get("task_id")
+        task_id = self.get_task_id()
         results = []
 
         context["orders_json"] = make_orders_courrier_load_data(results, orders, couriers).model_dump_json()
