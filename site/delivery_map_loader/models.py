@@ -12,11 +12,6 @@ class DeliveryMapPaletteSettings(SingletonModelMixin, models.Model):
             ("can_load_delivery_map", "Может загружать карту доставки"),
         ]
 
-    @classmethod
-    def get_solo(cls):
-        obj, created = cls.objects.get_or_create(pk=2)
-        return obj
-
 
 def get_yandex_maps_constructor_hotbar_colors():
     return [

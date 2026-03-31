@@ -25,7 +25,6 @@ class IndexView(AppViewMixin, FormView):
     template_name = 'base_form_page.html'
     form_class = forms.DateChooseForm
     subtitle = "Выберите день доставки"
-    success_url = reverse_lazy()
 
     def form_valid(self, form):
         errors, file_name = delivery_map_generator.run(form.cleaned_data['date'])
