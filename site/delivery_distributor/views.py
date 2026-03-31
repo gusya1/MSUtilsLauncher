@@ -23,10 +23,9 @@ from moy_sklad.utils import format_moy_sklad_datetime
 from yandex_geocoder.geocoder import Geocoder
 from yandex_geocoder.models import Location
 
-from .core.solution_processor import export_courier_break_points, export_route_points, export_routes_lines_to_geojson, extract_solution, make_context, make_orders_courrier_load_data
-from .core.delivery_data_preparator import create_data_model
+from .core.solution_processor import export_courier_break_points, export_route_points, export_routes_lines_to_geojson, make_context, make_orders_courrier_load_data
 from .core.time_intervals_identifier import parse_time_interval_safety
-from .core.data_structure import CourierData, OrderData, Point, RoutingSettingsData
+from .core.data_structure import CourierData, OrderData, Point, RoutingSettingsData, RoutingTaskData
 from .tasks import solve_vrp_task
 from .apps import DeliveryDistributorConfig
 from .forms import CourierForm, DateChooseForm, DeliveryRoutingSettingsForm, OrderForm
@@ -404,11 +403,11 @@ class RoutingDetailsView(AppViewMixin, DeliveryRoutingCacheMixin, FormView):
 class ProcessView(DeliveryRoutingCacheMixin, View):
     def get(self, request, *args, **kwargs):
         self.set_results([])
-        orders = self.get_orders()
-        settings = self.get_settings()
-        couriers = self.get_enabled_couriers()
-        data = create_data_model(orders, couriers, settings)
-        task = solve_vrp_task.delay(data.model_dump_json(), settings.model_dump_json())
+        task = solve_vrp_task.delay(RoutingTaskData(
+            orders=self.get_orders(),
+            couriers=self.get_enabled_couriers(),
+            settings=self.get_settings()
+        ).model_dump_json())
         self.set_task_id(task.id)
         return redirect(
             f"{self.reverse_with_cache('delivery_distributor:results')}"

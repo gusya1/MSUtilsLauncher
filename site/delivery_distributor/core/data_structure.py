@@ -43,6 +43,11 @@ class RoutingSettingsData(pydantic.BaseModel):
     exceed_capacity_penalty: int # штраф за превышение вместимости курьера
     max_process_time_sec: int # максимальное время обработки маршрутов
 
+class RoutingTaskData(pydantic.BaseModel):
+    orders: list[OrderData]
+    couriers: list[CourierData]
+    settings: RoutingSettingsData
+
 class RoutingData(pydantic.BaseModel):
     time_matrix: list[list[float]]
     distance_matrix: list[list[float]]

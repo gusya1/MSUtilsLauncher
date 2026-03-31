@@ -2,6 +2,7 @@ from MSApi import Project, CustomerOrder, MSApi, \
     error_handler, MSApiException, MSApiHttpException
 from MSApi import Filter
 
+from moy_sklad_settings.models import MoySkladSettings
 from moy_sklad_utils import filters
 from moy_sklad_settings.utils import get_moy_sklad_token
 
@@ -76,7 +77,8 @@ def run(geojson_data, date):
 
         settings_model = DeliveryMapPaletteSettings.get_solo()
         projects_by_color = {item.color: item.project for item in settings_model.project_by_color.all()}
-        delivery_order_attribute_name = settings_model.delivery_order_attribute_name
+        ms_settings = MoySkladSettings.get_solo()
+        delivery_order_attribute_name = ms_settings.delivery_order_attribute_name
 
         date_filter = filters.get_one_day_filter('deliveryPlannedMoment', date)
         delivery_order_attribute = find_customer_order_attribute_by_name(delivery_order_attribute_name)

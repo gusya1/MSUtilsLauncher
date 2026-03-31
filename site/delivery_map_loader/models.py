@@ -4,8 +4,6 @@ from root.models import SingletonModelMixin
 from colorful.fields import RGBColorField
 
 class DeliveryMapPaletteSettings(SingletonModelMixin, models.Model):
-    delivery_order_attribute_name = models.CharField(max_length=255, blank=True, verbose_name="Название атрибута очередности доставки")
-
     class Meta:
         verbose_name = "Настройки палитры для выгрузки карты доставки"
         verbose_name_plural = "Настройки палитры для выгрузки карты доставки"
