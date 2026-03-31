@@ -1,6 +1,6 @@
 {
     "name": "SnmProgs Project",
-    "dockerComposeFile": "../docker-compose.yaml",
+    "dockerComposeFile": "../docker-compose.yml",
     "service": "web",
     "workspaceFolder": "/app",
     "customizations": {

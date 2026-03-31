@@ -72,13 +72,6 @@ class CourierForm(forms.Form):
         if not courier or not courier.home_location:
             self.fields["use_home_location"].disabled = True
 
-    def clean_color(self):
-        color = self.cleaned_data.get('color')
-        # Если цвет не выбран (пришло '#000000'), считаем его пустым
-        if color == '#000000':
-            return None            # или None, в зависимости от модели
-        return color
-
 class DeliveryRoutingSettingsForm(ModelForm):
     class Meta:
         model = DeliveryRoutingSettings

@@ -73,6 +73,10 @@ class DeliveryRoutingSettings(SingletonModelMixin, models.Model):
         default=10, 
         verbose_name="Штраф за простой", 
         help_text="Штраф решению за каждую секунду простоя курьера")
+    fuel_penalty = models.IntegerField(
+        default=100, 
+        verbose_name="Штраф на расход топлива", 
+        help_text="Штраф решению за каждый грамм израсходованного топлива")
     exceed_work_hours_penalty = models.IntegerField(
         default=100, 
         verbose_name="Штраф за превышение рабочих часов",

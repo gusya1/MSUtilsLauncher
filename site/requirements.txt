@@ -14,3 +14,5 @@ psycopg2-binary>=2.9.11
 django-redis>=5.0.0
 redis>=7.4.0
 celery>=5.6.3
+pytest>=9.0.2
+pytest_django>=4.12.0

@@ -63,7 +63,7 @@ def extract_solution(solution, manager, routing):
                 "end_time_seconds": end_time,
                 "span_time_seconds": end_time - start_time,
                 "waiting_time_seconds": total_waiting_time,
-                "fuel_cost": fuel_cost,
+                "fuel_cost": fuel_cost / 1000,
                 "capacity": capacity / 1000,
             }
         )

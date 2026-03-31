@@ -63,19 +63,22 @@ def add_fuel_dimension(routing, manager, data: RoutingData, settings: RoutingSet
         to_node = manager.IndexToNode(to_index)
         
         travel_distance = data.distance_matrix[from_node][to_node]
-        fuel_cost = travel_distance * settings.fuel_factor / 100000
+        fuel_cost = travel_distance * settings.fuel_factor / 100
         return int(fuel_cost)
     
     transit_callback_index = routing.RegisterTransitCallback(fuel_callback)
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
     
     # Добавляем измерение времени (Time Windows)
     routing.AddDimension(
         transit_callback_index,
         0,   
-        10000000,
+        100000000000,
         True,
         'Fuel')
+    
+    fuel_dimension = routing.GetDimensionOrDie('Fuel')
+
+    fuel_dimension.SetSpanCostCoefficientForAllVehicles(settings.fuel_penalty)
     
 
 def add_capacity_dimension(routing, manager, data: RoutingData, settings: RoutingSettingsData):
