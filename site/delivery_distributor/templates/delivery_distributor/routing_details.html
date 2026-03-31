@@ -6,8 +6,8 @@
 {% block breadcrumbs %}
     <p>
         <a href="{% url "delivery_distributor:index" %}">Назад к выбору даты</a>
-        <- <a href="{% url "delivery_distributor:orders" %}">Назад к заказам</a>
-        <- <a href="{% url "delivery_distributor:couriers" %}">Назад к курьерам</a>
+        <- <a href="{% url "delivery_distributor:orders" cache_key %}">Назад к заказам</a>
+        <- <a href="{% url "delivery_distributor:couriers" cache_key %}">Назад к курьерам</a>
     </p>
 {% endblock  %}
 

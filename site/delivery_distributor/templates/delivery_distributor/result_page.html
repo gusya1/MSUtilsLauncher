@@ -6,9 +6,9 @@
 {% block breadcrumbs %}
 <p>
     <a href="{% url "delivery_distributor:index" %}">Назад к выбору даты</a>
-    <- <a href="{% url "delivery_distributor:orders" %}">Назад к заказам</a>
-    <- <a href="{% url "delivery_distributor:couriers" %}">Назад к курьерам</a>
-    <- <a href="{% url "delivery_distributor:routing_details" %}">Назад к деталям маршрутизации</a>
+    <- <a href="{% url "delivery_distributor:orders" cache_key  %}">Назад к заказам</a>
+    <- <a href="{% url "delivery_distributor:couriers" cache_key  %}">Назад к курьерам</a>
+    <- <a href="{% url "delivery_distributor:routing_details" cache_key %}">Назад к деталям маршрутизации</a>
 </p>
 {% endblock  %}
 
@@ -65,7 +65,7 @@
             setTimeout(() => location.reload(), 3000);
         </script>
     {% else %}
-        <p>Решение не найдено =(. <a href="{% url "delivery_distributor:routing_details" %}">Назад к деталям маршрутизации</a>
+        <p>Решение не найдено =(. <a href="{% url "delivery_distributor:routing_details" cache_key %}">Назад к деталям маршрутизации</a>
     {% endif %}
 </p>
 {% endif %}
@@ -74,7 +74,7 @@
 
 {% block extra_js %}
 <script>
-    get_routes_url = "{% url "delivery_distributor:get_routes" %}";
+    get_routes_url = "{% url "delivery_distributor:get_routes" cache_key %}";
 </script>
 {% yandex_maps_on_load_script %}
 <script src="{% static "yandex_map/js/yandex_map.js" %}"></script>

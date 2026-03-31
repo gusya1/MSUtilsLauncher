@@ -14,3 +14,6 @@ class SingletonModelMixin(models.Model):
     def get_solo(cls):
         obj, _ = cls.objects.get_or_create(pk=cls.singleton_pk)
         return obj
+    
+    def __str__(self):
+        return self._meta.verbose_name.capitalize()

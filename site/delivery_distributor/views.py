@@ -1,11 +1,12 @@
 import logging
 import datetime
+import uuid
 
 from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.generic import FormView, TemplateView, View
 from django.http import JsonResponse
-from django.views.generic.detail import DetailView
+from django.core.cache import cache
 
 from celery.result import AsyncResult
 
@@ -19,14 +20,11 @@ from moy_sklad import model
 from moy_sklad.client import MoySkladClient
 from moy_sklad.utils import format_moy_sklad_datetime
 
-from courier_data_loader.core.data_structure import OrdersCourierData
-
 from yandex_geocoder.geocoder import Geocoder
 from yandex_geocoder.models import Location
 
 from .core.solution_processor import export_courier_break_points, export_route_points, export_routes_lines_to_geojson, extract_solution, make_context, make_orders_courrier_load_data
 from .core.delivery_data_preparator import create_data_model
-from .core.solver import solve_vrp
 from .core.time_intervals_identifier import parse_time_interval_safety
 from .core.data_structure import CourierData, OrderData, Point, RoutingSettingsData
 from .tasks import solve_vrp_task
@@ -35,8 +33,6 @@ from .forms import CourierForm, DateChooseForm, DeliveryRoutingSettingsForm, Ord
 from .models import Courier, DeliveryRoutingSettings
 
 logger = logging.getLogger("delivery_distributor")
-
-
 
 class AppViewMixin:
     subtitle= ""
@@ -48,65 +44,119 @@ class AppViewMixin:
         return context
 
 
-projects_blacklist = { # TODO move to settings
-    "СВ-Ветеранов",
-    "СВ-П",
-    "СВ-Парнас",
-    "СВ-Т"
-}
+class DeliveryRoutingCacheMixin:
+    cache_timeout = 60 * 60 * 3 # 3 час
 
-class DeliveryRutingSessionMixin:
-    root_key= "delivery_routing_session"
+    cache_url_kwarg = "cache_key"
+
+    def get_cache_key(self):
+        return self.kwargs.setdefault(self.cache_url_kwarg, uuid.uuid4())
+
+    def reverse_with_cache(self, viewname, **kwargs):
+        kwargs[self.cache_url_kwarg] = self.get_cache_key()
+        return reverse(viewname, kwargs=kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context["cache_key"] = self.get_cache_key()
+
+        return context
+
+    def _get_cache_data(self):
+        return cache.get(self.get_cache_key(), {})
+
+    def _set_cache_data(self, data):
+        cache.set(
+            self.get_cache_key(),
+            data,
+            timeout=self.cache_timeout,
+        )
+
+    def _update_cache(self, key, value):
+        data = self._get_cache_data()
+        data[key] = value
+        self._set_cache_data(data)
+
+    # ---------------- orders ----------------
 
     def set_orders(self, orders: list[OrderData]):
-        self.request.session.setdefault(self.root_key, {})["orders"] = [order.model_dump_json() for order in orders]
-        self.request.session.modified = True
+        self._update_cache(
+            "orders",
+            [o.model_dump_json() for o in orders],
+        )
 
     def get_orders(self):
-        return [OrderData.model_validate_json(data) for data in self.request.session.get(self.root_key, {}).get("orders", [])]
-    
+        return [
+            OrderData.model_validate_json(data)
+            for data in self._get_cache_data().get("orders", [])
+        ]
+
+    # ---------------- couriers ----------------
+
     def set_couriers(self, couriers: list[CourierData]):
-        self.request.session.setdefault(self.root_key, {})["couriers"] = [courier.model_dump_json() for courier in couriers]
-        self.request.session.modified = True
-    
+        self._update_cache(
+            "couriers",
+            [c.model_dump_json() for c in couriers],
+        )
+
     def get_couriers(self):
-        return [CourierData.model_validate_json(data) for data in self.request.session.get(self.root_key, {}).get("couriers", [])]
-    
+        return [
+            CourierData.model_validate_json(data)
+            for data in self._get_cache_data().get("couriers", [])
+        ]
+
     def get_enabled_couriers(self):
-        return [courier for courier in self.get_couriers() if courier.enable]
-    
+        return [
+            c
+            for c in self.get_couriers()
+            if c.enable
+        ]
+
+    # ---------------- settings ----------------
+
     def set_settings(self, settings: RoutingSettingsData):
-        self.request.session.setdefault(self.root_key, {})["settings"] = settings.model_dump_json()
-        self.request.session.modified = True
-    
-    def get_settings(self) -> RoutingSettingsData | None:
-        if data := self.request.session.get(self.root_key, {}).get("settings"):
+        self._update_cache(
+            "settings",
+            settings.model_dump_json(),
+        )
+
+    def get_settings(self):
+        data = self._get_cache_data().get("settings")
+
+        if data:
             return RoutingSettingsData.model_validate_json(data)
+
         return None
 
-    def set_results(self, results: list):
-        self.request.session.setdefault(self.root_key, {})["results"] = results
-        self.request.session.modified = True
-    
+    # ---------------- results ----------------
+
+    def set_results(self, results):
+        self._update_cache("results", results)
+
     def get_results(self):
-        return self.request.session.get(self.root_key, {}).get("results", [])
-    
-    def reset_session(self):
-        self.request.session[self.root_key] = {}
-        self.request.session.modified = True
+        return self._get_cache_data().get("results", [])
+
+    # ---------------- reset ----------------
+
+    def reset_cache(self):
+        cache.delete(self.get_cache_key())
+
 
 def make_point_by_location(location: Location):
     return Point(longitude=location.longitude, latitude=location.latitude)
 
+
 # Create your views here.
-class IndexView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
+class IndexView(AppViewMixin, DeliveryRoutingCacheMixin, FormView):
     template_name = 'base_form_page.html'
     form_class = DateChooseForm
-    success_url = reverse_lazy("delivery_distributor:orders")
     subtitle = "Выберите день доставки"
-    
+
+    def get_success_url(self):
+        return self.reverse_with_cache("delivery_distributor:orders")
+
     def form_valid(self, form):
-        self.reset_session()
         geocoder = Geocoder()
         settings = MoySkladSettings.get_solo()
         orders = self._get_moy_sklad_orders(form.cleaned_data['date'])
@@ -116,7 +166,8 @@ class IndexView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
     
     def _get_moy_sklad_orders(self, date):
         client = MoySkladClient(get_moy_sklad_token())
-        project_filters = ["project!={}".format(project.meta.href) for project in self.__get_projects(client, projects_blacklist)]
+        settings = MoySkladSettings.get_solo()
+        project_filters = ["project!={}".format(project.meta.href) for project in self.__get_projects(client, settings.delivery_routing_project_blacklist)]
         date_filter = "deliveryPlannedMoment={}".format(format_moy_sklad_datetime(date))
         filter = ";".join(project_filters + [date_filter])
         return getters.walk_for_all(client, model.MoySkladCustomerOrderExpandedPositionsAssortment, filter=filter, limit=99, expand="positions.assortment")
@@ -147,16 +198,18 @@ class IndexView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
         return projects[0] if len(projects) > 0 else None
     
 
-class OrderDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
+class OrderDetailsView(AppViewMixin, DeliveryRoutingCacheMixin, FormSetView):
     template_name = 'delivery_distributor/orders_page.html'
     form_class = OrderForm
     subtitle = "Детали заказов"
-    success_url = reverse_lazy("delivery_distributor:couriers")
     factory_kwargs = {'extra': 2, 'max_num': None, 'can_order': False, 'can_delete': True}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.geocoder = Geocoder()
+
+    def get_success_url(self):
+        return self.reverse_with_cache("delivery_distributor:couriers")
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -189,12 +242,14 @@ class OrderDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
         data["has_coords"] = order.point is not None
         return data
 
-class CourierDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
+class CourierDetailsView(AppViewMixin, DeliveryRoutingCacheMixin, FormSetView):
     template_name = 'delivery_distributor/formset_page.html'
     form_class = CourierForm
     subtitle = "Детали курьеров"
-    success_url = reverse_lazy("delivery_distributor:routing_details")
     factory_kwargs = {'extra': 1, 'max_num': None, 'can_order': False, 'can_delete': True}
+
+    def get_success_url(self):
+        return self.reverse_with_cache("delivery_distributor:routing_details")
 
     def get_initial(self):
         couriers = self.get_couriers() or self.__get_couriers_by_settings()
@@ -258,10 +313,12 @@ class CourierDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormSetView):
         return couriers
     
 
-class RoutingDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
+class RoutingDetailsView(AppViewMixin, DeliveryRoutingCacheMixin, FormView):
     template_name = 'delivery_distributor/routing_details.html'
     form_class  = DeliveryRoutingSettingsForm
-    success_url = reverse_lazy("delivery_distributor:process")
+
+    def get_success_url(self):
+        return self.reverse_with_cache("delivery_distributor:process")
 
     def post(self, request, *args, **kwargs):
         if request.POST.get("action") == "reset":
@@ -336,7 +393,7 @@ class RoutingDetailsView(AppViewMixin, DeliveryRutingSessionMixin, FormView):
         return instance
 
 
-class ProcessView(DeliveryRutingSessionMixin, View):
+class ProcessView(DeliveryRoutingCacheMixin, View):
     def get(self, request, *args, **kwargs):
         self.set_results([])
         orders = self.get_orders()
@@ -345,10 +402,10 @@ class ProcessView(DeliveryRutingSessionMixin, View):
         data = create_data_model(orders, couriers, settings)
         task = solve_vrp_task.delay(data.model_dump_json(), settings.model_dump_json())
         return redirect(
-            f"{reverse('delivery_distributor:results')}?task_id={task.id}"
+            f"{self.reverse_with_cache('delivery_distributor:results')}?task_id={task.id}"
         )
     
-class ResultsView(AppViewMixin, DeliveryRutingSessionMixin, TemplateView):
+class ResultsView(AppViewMixin, DeliveryRoutingCacheMixin, TemplateView):
     template_name = 'delivery_distributor/result_page.html'
     subtitle = "Результат"
 
@@ -373,7 +430,7 @@ class ResultsView(AppViewMixin, DeliveryRutingSessionMixin, TemplateView):
         return context
 
 
-class GetGeojsonRoutesView(DeliveryRutingSessionMixin, View):
+class GetGeojsonRoutesView(DeliveryRoutingCacheMixin, View):
     def get(self, request, *args, **kwargs):
         results = self.get_results()
         orders = self.get_orders()
