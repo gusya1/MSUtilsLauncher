@@ -75,7 +75,7 @@ def run(geojson_data, date):
         MSApi.set_access_token(get_moy_sklad_token())
 
         settings_model = DeliveryMapPaletteSettings.get_solo()
-        projects_by_color = {item.color: item.project for item in settings_model.palette_items.all()}
+        projects_by_color = {item.color: item.project for item in settings_model.project_by_color.all()}
         delivery_order_attribute_name = settings_model.delivery_order_attribute_name
 
         date_filter = filters.get_one_day_filter('deliveryPlannedMoment', date)

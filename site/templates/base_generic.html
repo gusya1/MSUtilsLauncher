@@ -33,10 +33,14 @@
         <div class="mb-4 text-end">
           {% if user.is_authenticated %}
             <p>Привет, {{ user.get_username }}. {% if user.is_staff %}<a href="{% url 'admin:index' %}">Админка</a>{% endif %}</p>
-            <p>Спасибо что зашёл) <a href="{% url 'logout' %}">Выход</a></p>
+            <p>Спасибо что зашёл)</p>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit">Выйти</button>
+            </form>
           {% else %}
             <p>Ты это, заходи если что.</p>
-            <p><a href="{% url 'login' %}">Вход</a></p>
+            <p><a href="{% url 'admin:login' %}">Вход</a></p>
           {% endif %}
         </div>
       </div>
