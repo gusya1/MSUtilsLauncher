@@ -10,7 +10,7 @@ python manage.py collectstatic --noinput --clear
 case "$DJANGO_MODE" in
     gunicorn)
         echo "Starting Gunicorn server for $PROJECT_NAME..."
-        exec gunicorn ${PROJECT_NAME}.wsgi:application --timeout 3600 --bind 0.0.0.0:8000 --workers 3
+        exec gunicorn ${PROJECT_NAME}.wsgi:application --timeout 3600 --bind 0.0.0.0:8000 --workers 1
         ;;
     runserver)
         echo "Starting Django runserver..."

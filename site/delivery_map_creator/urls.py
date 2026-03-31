@@ -17,11 +17,15 @@ Including another URLconf
 
 """
 from django.urls import path
+from django.contrib.auth.decorators import permission_required
 
 from . import views
 
+app_name = 'delivery_map_creator'
+
+app_permission = 'delivery_map_creator.can_generate_delivery_map'
+
 urlpatterns = [
-    path('', views.index, name='delivery_map_creator'),
-    path('run', views.run, name='delivery_map_creator/run'),
-    path('download', views.download, name='delivery_map_creator/download'),
+    path('', permission_required(app_permission)(views.IndexView.as_view()), name='index'),
+    path('download', permission_required(app_permission)(views.download), name='download'),
 ]
