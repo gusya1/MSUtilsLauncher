@@ -105,6 +105,28 @@ def add_capacity_dimension(routing, manager, data: RoutingData, settings: Routin
             settings.exceed_capacity_penalty
         )
     
+def add_order_dimension(routing, manager, data: RoutingData, settings: RoutingSettingsData):
+        def order_callback(from_index, to_index):
+            from_node = manager.IndexToNode(from_index)
+            if from_node >= data.num_orders:
+                return 0
+            return 1
+
+        callback_index = routing.RegisterTransitCallback(order_callback)
+
+        routing.AddDimension(
+            callback_index,
+            0,
+            data.num_orders,
+            True,
+            "Orders"
+        )
+
+        orders_dimension = routing.GetDimensionOrDie("Orders")
+        orders_dimension.SetGlobalSpanCostCoefficient(
+            settings.balance_penalty
+        )
+
 def set_vehicle_restrictions(routing, manager, data: RoutingData, settings: RoutingSettingsData):
     for vehicle_id in range(data.num_vehicles):
         routing.SetFixedCostOfVehicle(settings.vehicle_start_cost, vehicle_id)
@@ -123,6 +145,7 @@ def solve_vrp(data: RoutingData, settings: RoutingSettingsData):
     add_time_dimension(routing, manager, data, settings)
     add_fuel_dimension(routing, manager, data, settings)
     add_capacity_dimension(routing, manager, data, settings)
+    add_order_dimension(routing, manager, data, settings)
 
     # Настройки поиска решения
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()

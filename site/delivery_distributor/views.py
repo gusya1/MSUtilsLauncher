@@ -368,6 +368,7 @@ class RoutingDetailsView(AppViewMixin, DeliveryRoutingCacheMixin, FormView):
             late_penalty=settings.late_penalty,
             slack_penalty=settings.slack_penalty,
             fuel_penalty=settings.fuel_penalty,
+            balance_penalty=settings.balance_penalty,
             exceed_work_hours_penalty=settings.exceed_work_hours_penalty,
             exceed_work_time_penalty=settings.exceed_work_time_penalty,
             exceed_capacity_penalty=settings.exceed_capacity_penalty,
@@ -392,6 +393,7 @@ class RoutingDetailsView(AppViewMixin, DeliveryRoutingCacheMixin, FormView):
         instance.late_penalty = data.late_penalty
         instance.slack_penalty = data.slack_penalty
         instance.fuel_penalty = data.fuel_penalty
+        instance.balance_penalty = data.balance_penalty
         instance.exceed_work_hours_penalty = data.exceed_work_hours_penalty
         instance.exceed_work_time_penalty = data.exceed_work_time_penalty
         instance.exceed_capacity_penalty = data.exceed_capacity_penalty

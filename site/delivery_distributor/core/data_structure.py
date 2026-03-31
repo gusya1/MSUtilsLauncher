@@ -38,6 +38,7 @@ class RoutingSettingsData(pydantic.BaseModel):
     late_penalty: int # штраф за опоздание
     slack_penalty: int # штраф за секунду простоя
     fuel_penalty: int # штраф за грамм топлива
+    balance_penalty: int # штраф дисбаланс количество товаров
     exceed_work_hours_penalty: int # штраф за превышение рабочих часов
     exceed_work_time_penalty: int # штраф за выход из рабочего времени
     exceed_capacity_penalty: int # штраф за превышение вместимости курьера
