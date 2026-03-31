@@ -7,7 +7,7 @@
 </div>
 <div class="row mb-4">
   <div class="col">
-    <form method="post">
+    <form method="post" enctype="{{ form_enctype }}">
       {% csrf_token %}
       {% block form_content %}
       <table class="mb-4">
