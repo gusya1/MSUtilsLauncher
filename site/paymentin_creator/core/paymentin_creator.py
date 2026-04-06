@@ -40,6 +40,7 @@ def create_paymentin_for_customer_orders(data: TaskData, paymentin_state_name: s
                     )
                 ]
             ))
+            template.moment = order.moment
             template.state = make_entity_meta_filed(state)
             payment_in = creators.create_entity(client, MoySkladPaymentInCreate.model_validate(template.model_dump()))
             created_payments.append(payment_in.name)

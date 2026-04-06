@@ -352,6 +352,7 @@ class MoySkladCustomerOrderBase(MoySkladAttributesMixin, BaseModel):
     project: MoySkladMetaField | None = None
     positions: MoySkladMetaField | None = None
     store: MoySkladMetaField | None = None
+    moment: MoscowDateTime | None = None
 
 class MoySkladCustomerOrderResponse(BaseModel):
     id: UUID
@@ -422,6 +423,7 @@ class MoySkladPaymentInBase(BaseModel):
     paymentPurpose: str | None = None
     operations: list[MoySkladOperation] | None = None
     state: MoySkladMetaField | None = None
+    moment: MoscowDateTime | None = None
 
 class MoySkladPaymentInResponse(MoySkladPaymentInBase):
     id: UUID
