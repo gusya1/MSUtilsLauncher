@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'delivery_distributor',
     'courier_data_loader',
     'yandex_map',
+    'paymentin_creator',
 ]
 
 MIDDLEWARE = [

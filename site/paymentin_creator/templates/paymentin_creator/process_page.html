@@ -1,0 +1,14 @@
+{% extends "base_app_page.html" %}
+
+
+{% block content %}
+<div class="row mb-4">
+    <p>{{ processing_text }}</p>
+</div>
+{% endblock  %}
+
+{% block extra_js %}
+    <script>
+        setTimeout(() => location.reload(), 3000);
+    </script>
+{% endblock %}

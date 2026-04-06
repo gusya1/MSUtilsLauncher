@@ -6,7 +6,7 @@ import json
 
 from .exceptions import MoySkladError, UnauthorizedRequestError
 from .client import MoySkladClient, make_url
-from .types import get_link_to_entity_collection
+from .types import get_link_to_entity_collection, get_response_class_by_base_class
 from .model import MoySkladImage, MoySkladAttributeInfo, MoySkladState
 
 logger = logging.getLogger("moysklad_sync")
@@ -63,6 +63,13 @@ def get_attibutes_for_entity(client: MoySkladClient, entity_class, **kwargs):
 
 def get_states_for_entity(client: MoySkladClient, entity_class, **kwargs):
     return walk_for_href(client, MoySkladState, make_url("{}/metadata".format(get_link_to_entity_collection(entity_class))), list_field="states", **kwargs)
+
+def get_entity_template(client: MoySkladClient, entity):
+    response_class = get_response_class_by_base_class(type(entity))
+    response = client.put("{}/new".format(get_link_to_entity_collection(response_class)), entity.model_dump_json(exclude_none=True))
+    if response.status_code != 200:
+        raise_for_status(response)
+    return type(entity).model_validate(response.json())
 
 def raise_for_status(response):
     if response.status_code == 401:

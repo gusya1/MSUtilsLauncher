@@ -399,3 +399,45 @@ class MoySkladStore(BaseModel):
     id: UUID
     meta: MoySkladMeta
     name: str
+
+class MoySkladRate(BaseModel):
+    currency: MoySkladMetaField
+    value: Kopeck | None = None
+
+class MoySkladOperation(BaseModel):
+    meta: MoySkladMeta
+    linkedSum: Kopeck | None = None
+
+class MoySkladPaymentInBase(BaseModel):
+    name: str | None = None
+    applicable: bool | None = None
+    printed: bool | None = None
+    published: bool | None = None
+    rate: MoySkladRate | None = None
+    sum: Kopeck | None = None
+    agent: MoySkladMetaField | None = None
+    organization: MoySkladMetaField | None = None
+    agentAccount: MoySkladMetaField | None = None
+    organizationAccount: MoySkladMetaField | None = None
+    paymentPurpose: str | None = None
+    operations: list[MoySkladOperation] | None = None
+    state: MoySkladMetaField | None = None
+
+class MoySkladPaymentInResponse(MoySkladPaymentInBase):
+    id: UUID
+    meta: MoySkladMeta
+    name: str
+    accountId: UUID
+    applicable: bool
+    created: MoscowDateTime
+    agent: MoySkladMetaField
+
+class MoySkladPaymentIn(MoySkladPaymentInResponse):
+    pass
+
+class MoySkladPaymentInUpdate(MoySkladPaymentInBase):
+    pass
+
+class MoySkladPaymentInCreate(MoySkladPaymentInBase):
+    agent: MoySkladMetaField
+    organization: MoySkladMetaField

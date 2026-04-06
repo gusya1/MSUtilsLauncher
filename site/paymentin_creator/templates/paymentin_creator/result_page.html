@@ -1,0 +1,14 @@
+{% extends "base_app_page.html" %}
+
+
+{% block content %}
+{% if error %}
+<div class="alert alert-danger mb-0">{{ error }}</div>
+{% endif %}
+<p>Созданные платежи:</p>
+<ul>
+    {% for paymentin in created_paymentsin %}
+    <li>{{ paymentin }}</li>
+    {% endfor %}
+</ul>
+{% endblock  %}

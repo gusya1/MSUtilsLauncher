@@ -1,8 +1,6 @@
 from django.db import models
 from root.models import SingletonModelMixin
 
-from django.contrib.postgres.fields import ArrayField
-
 
 
 
