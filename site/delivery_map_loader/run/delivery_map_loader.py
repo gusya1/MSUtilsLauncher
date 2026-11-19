@@ -1,9 +1,7 @@
-from datetime import timedelta
-
 from moy_sklad.client import MoySkladClient
 from moy_sklad import getters, model, updaters
 from moy_sklad.exceptions import MoySkladError
-from moy_sklad.utils import format_moy_sklad_datetime, make_entity_meta_filed
+from moy_sklad.utils import get_one_day_filter, make_entity_meta_filed
 from moy_sklad_settings.models import MoySkladSettings
 from moy_sklad_settings.utils import get_moy_sklad_token
 
@@ -12,12 +10,6 @@ from map_constructor_model.feature import Feature
 from map_constructor_model.properties import MapConstructorPointProperties
 
 from delivery_map_loader.models import DeliveryMapPaletteSettings
-
-
-def _get_one_day_filter(parameter, date):
-    next_date = date + timedelta(days=1)
-    return "{}>={};{}<{}".format(parameter, format_moy_sklad_datetime(date), parameter,
-                                 format_moy_sklad_datetime(next_date))
 
 
 def update_customer_order(client: MoySkladClient, customer_order: model.MoySkladCustomerOrder, updated_data):
@@ -89,7 +81,7 @@ def run(geojson_data, date):
         ms_settings = MoySkladSettings.get_solo()
         delivery_order_attribute_name = ms_settings.delivery_order_attribute_name
 
-        date_filter = _get_one_day_filter('deliveryPlannedMoment', date)
+        date_filter = get_one_day_filter('deliveryPlannedMoment', date)
         delivery_order_attribute = find_customer_order_attribute_by_name(client, delivery_order_attribute_name)
 
         collection = FeatureCollection.model_validate_json(geojson_data)

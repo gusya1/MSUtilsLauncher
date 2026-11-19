@@ -1,14 +1,17 @@
 import json
 import logging
 
-from MSApi import MSApi, MSApiException, Expand, CustomerOrder
+from requests.exceptions import HTTPError
 from django.core.files.base import ContentFile
 
 from ..AutocleanStorage import autoclean_default_storage
-from moy_sklad_utils import filters
-from moy_sklad_utils.custom_entity_utils import find_custom_entity, get_entity_element_names
 from yandex_geocoder.client import Client
 from yandex_geocoder.exceptions import NothingFonudError, ResponseError, YandexGeocoderError
+from moy_sklad.client import MoySkladClient, make_url
+from moy_sklad import getters, model
+from moy_sklad.exceptions import MoySkladError
+from moy_sklad.utils import get_one_day_filter
+from moy_sklad_settings.models import MoySkladSettings
 from moy_sklad_settings.utils import get_moy_sklad_token
 
 from delivery_map_creator.models import DeliveryMapGeneratorSettings
@@ -26,19 +29,19 @@ def authorize_yandex_maps_client(key):
 
 
 def contains_project_in_blacklist(project, blacklist):
-    return project is not None and project.get_name() in blacklist
+    return project is not None and project.name in blacklist
 
 
-def get_delivery_time_value(customer_order):
-    delivery_time = customer_order.get_attribute_by_name('Время доставки')
-    if delivery_time is None:
+def get_delivery_time_value(customer_order, delivery_time_attribute_name):
+    attr = customer_order.find_attribute_by_name(delivery_time_attribute_name)
+    if attr is None:
         return None
     else:
-        return delivery_time.get_value()
+        return attr.value
 
 
 def get_agent_actual_address(agent):
-    actual_address = agent.get_actual_address()
+    actual_address = agent.actualAddress
     if actual_address is None:
         raise AddressError("Адрес не заполнен")
     return actual_address
@@ -60,22 +63,35 @@ class CustomerOrderPointOnMap:
         self.lon_lat = None
 
 
-def make_customer_order_point(customer_order, client):
+def make_customer_order_point(customer_order, client, delivery_time_attribute_name):
     result = CustomerOrderPointOnMap()
-    result.customer_order_name = customer_order.get_name()
-    result.delivery_time = get_delivery_time_value(customer_order)
-    agent = customer_order.get_agent()
+    result.customer_order_name = customer_order.name
+    result.delivery_time = get_delivery_time_value(customer_order, delivery_time_attribute_name)
+    agent = customer_order.agent
     try:
         result.actual_address = get_agent_actual_address(agent)
         result.lon_lat = get_actual_address_coordinates(result.actual_address, client)
     except AddressError as e:
-        raise FillingOutError("Контрагент [{}]: {}".format(agent.get_name(), str(e)))
+        raise FillingOutError("Контрагент [{}]: {}".format(agent.name, str(e)))
     return result
 
 
-def gen_customers_orders_per_day(date):
-    date_filter = filters.get_one_day_filter('deliveryPlannedMoment', date)
-    return CustomerOrder.gen_list(filters=date_filter, expand=Expand('agent', 'project'))
+def gen_customers_orders_per_day(client, date):
+    date_filter = get_one_day_filter('deliveryPlannedMoment', date)
+    return list(getters.walk_for_all(
+        client, model.MoySkladCustomerOrderExpandedAgentProject,
+        filter=date_filter, expand="agent,project", limit=100))
+
+
+def get_project_blacklist_names(client, dict_name):
+    for entity in getters.walk_for_href(
+            client, model.MoySkladCustomEntity,
+            make_url("context/companysettings/metadata"), list_field="customEntities"):
+        if entity.name == dict_name:
+            return [element.name for element in
+                    getters.walk_for_href(client, model.MoySkladCustomEntityElement,
+                                          entity.entityMeta.href)]
+    raise RuntimeError("Справочник {} не найден!".format(dict_name))
 
 
 def format_point_name(customer_order_name, delivery_time):
@@ -143,11 +159,12 @@ class FeatureCollection:
 
 def run(date):
     try:
-        MSApi.set_access_token(get_moy_sklad_token())
+        ms_client = MoySkladClient(get_moy_sklad_token())
         generator_settings = DeliveryMapGeneratorSettings.get_solo()
+        delivery_time_attribute_name = MoySkladSettings.get_solo().delivery_time_attribute_name
 
-        projects_blacklist = get_entity_element_names(find_custom_entity(generator_settings.project_blacklist_dict))
-        client = authorize_yandex_maps_client(generator_settings.yandexmaps_key)
+        projects_blacklist = get_project_blacklist_names(ms_client, generator_settings.project_blacklist_dict)
+        yandex_client = authorize_yandex_maps_client(generator_settings.yandexmaps_key)
 
         color_manager = ColorManager(generator_settings.default_color, generator_settings.delivery_time_missed_color)
 
@@ -157,15 +174,15 @@ def run(date):
         feature_collection = FeatureCollection(map_name)
 
         for customer_order in filter(
-                lambda order: not contains_project_in_blacklist(order.get_project(), projects_blacklist),
-                gen_customers_orders_per_day(date)):
-            customer_order: CustomerOrder
-            logging.info("Processing customer order {}".format(customer_order.get_name()))
+                lambda order: not contains_project_in_blacklist(order.project, projects_blacklist),
+                gen_customers_orders_per_day(ms_client, date)):
+            logging.info("Processing customer order {}".format(customer_order.name))
 
             feature = Feature()
             try:
                 try:
-                    customer_order_point = make_customer_order_point(customer_order, client)
+                    customer_order_point = make_customer_order_point(
+                        customer_order, yandex_client, delivery_time_attribute_name)
 
                     feature.color = color_manager.get_color(customer_order_point.delivery_time)
                     feature.lon, feature.lat = customer_order_point.lon_lat
@@ -182,8 +199,6 @@ def run(date):
 
             except ResponseError as e:
                 error_list.append(f"Ошибка запроса Геокодера: {e}")
-            except MSApiException as e:
-                error_list.append(f"Moy Sklad error: {e}")
 
         data_json = json.dumps(feature_collection.make_data())
         true_filename = autoclean_default_storage.save("DeliveryMap_{}.geojson".format(map_name),
@@ -194,5 +209,5 @@ def run(date):
         return [f"Ошибка Яндекс Геокодера: {e}"], ""
     except RuntimeError as e:
         return [f"Ошибка выполнения: {e}"], ""
-    except MSApiException as e:
+    except (MoySkladError, HTTPError) as e:
         return [f"Ошибка работы с МойСклад: {e}"], ""

@@ -288,6 +288,7 @@ class MoySkaldCounterpartyBase(BaseModel):
     email: str = ""
     phone: str = ""
     tags: list[str] = ""
+    actualAddress: str | None = None
 
 class MoySkaldCounterpartyResponse(BaseModel):
     id: UUID
@@ -395,6 +396,10 @@ class MoySkladProject(BaseModel):
     meta: MoySkladMeta
     name: str
 
+class MoySkladCustomerOrderExpandedAgentProject(MoySkladCustomerOrder):
+    agent: MoySkaldCounterparty
+    project: MoySkladProject | None = None
+
 class MoySkladDiscount(BaseModel):
     id: UUID
     meta: MoySkladMeta
@@ -402,6 +407,17 @@ class MoySkladDiscount(BaseModel):
     assortment: list[MoySkladMetaField] = None
 
 class MoySkladStore(BaseModel):
+    id: UUID
+    meta: MoySkladMeta
+    name: str
+
+class MoySkladCustomEntity(BaseModel):
+    id: UUID
+    meta: MoySkladMeta
+    name: str
+    entityMeta: MoySkladMeta
+
+class MoySkladCustomEntityElement(BaseModel):
     id: UUID
     meta: MoySkladMeta
     name: str
