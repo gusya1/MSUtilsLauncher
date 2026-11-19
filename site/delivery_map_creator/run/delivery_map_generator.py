@@ -8,7 +8,7 @@ from ..AutocleanStorage import autoclean_default_storage
 from moy_sklad_utils import filters
 from moy_sklad_utils.custom_entity_utils import find_custom_entity, get_entity_element_names
 from yandex_geocoder.client import Client
-from yandex_geocoder.exceptions import NothingFonudError
+from yandex_geocoder.exceptions import NothingFonudError, ResponseError, YandexGeocoderError
 from moy_sklad_settings.utils import get_moy_sklad_token
 
 from delivery_map_creator.models import DeliveryMapGeneratorSettings
@@ -180,7 +180,7 @@ def run(date):
                     error_list.append(str(e))
                     continue
 
-            except ya_geocoder.exceptions.ResponseError as e:
+            except ResponseError as e:
                 error_list.append(f"Ошибка запроса Геокодера: {e}")
             except MSApiException as e:
                 error_list.append(f"Moy Sklad error: {e}")
@@ -190,7 +190,7 @@ def run(date):
                                                        ContentFile(data_json))
         return error_list, true_filename
 
-    except ya_geocoder.exceptions.YandexGeocoderError as e:
+    except YandexGeocoderError as e:
         return [f"Ошибка Яндекс Геокодера: {e}"], ""
     except RuntimeError as e:
         return [f"Ошибка выполнения: {e}"], ""

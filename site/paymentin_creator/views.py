@@ -2,11 +2,7 @@ import datetime
 import uuid
 
 from django.views.generic import FormView, TemplateView
-from django.urls import reverse
-from django.shortcuts import redirect
-from django.core.cache import cache
 
-from celery.result import AsyncResult
 
 from root.views import CacheMixin, ProcessView
 

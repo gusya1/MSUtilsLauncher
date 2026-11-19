@@ -6,8 +6,12 @@ class Location(models.Model):
     latitude = models.FloatField(verbose_name="Широта")
 
     class Meta:
+
+        """Мета-настройки модели."""
+
         verbose_name = "Локация"
         verbose_name_plural = "Локации"
 
     def __str__(self):
+        """Возвращает адрес."""
         return self.address

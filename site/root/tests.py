@@ -2,15 +2,16 @@ from django.test import TestCase
 from django.db import IntegrityError, models, transaction
 
 from .models import SingletonModelMixin
-from django.test import TestCase
 from django.db import connection
-from django.db import models
 
 
 class TestSingletonModel(SingletonModelMixin):
     value = models.IntegerField(default=0)
 
     class Meta:
+
+        """Мета-настройки тестовой модели."""
+
         app_label = "tests_tmp"
 
 

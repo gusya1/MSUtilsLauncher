@@ -39,7 +39,11 @@ class DeliveryRoutingSettings(SingletonModelMixin, models.Model):
     max_waiting_time = models.DurationField(
         default=datetime.timedelta(hours=23, minutes=59),
         verbose_name="Максимальное время простоя курьера",
-        help_text="Менять этот парамер нужно с ОСТОРОЖНОСТЬЮ. слишком маленькое значение может привести к неразрешимым конфликтам")
+        help_text=(
+            "Менять этот парамер нужно с ОСТОРОЖНОСТЬЮ. "
+            "слишком маленькое значение может привести к неразрешимым конфликтам"
+        )
+    )
     max_time = models.DurationField(
         default=datetime.timedelta(hours=23, minutes=59),
         verbose_name="Максимальное время прибытия в конечную точку",
@@ -101,6 +105,9 @@ class DeliveryRoutingSettings(SingletonModelMixin, models.Model):
         help_text="Система выдаст наилучший маршрут который смогла найти за предоставленное время")
 
     class Meta:
+
+        """Мета-настройки модели."""
+
         verbose_name = "Настройки маршрутизации курьеров"
         verbose_name_plural = "Настройки маршрутизации курьеров"
 
@@ -146,4 +153,5 @@ class Courier(models.Model):
     capacity = models.PositiveIntegerField(verbose_name="Вместимость (кг)")
 
     def __str__(self):
+        """Возвращает имя курьера."""
         return self.name

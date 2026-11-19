@@ -4,6 +4,9 @@ requires-python = "~=3.8"
 [tool.ruff]
 line-length = 121
 src = ["snmprogs"]
+extend-exclude = [
+    "**/migrations/**",
+]
 
 [tool.ruff.lint]
 select = [

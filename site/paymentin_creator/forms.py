@@ -1,6 +1,5 @@
 import logging
 
-from django.forms import ClearableFileInput
 import django.forms as forms
 
 from moy_sklad import getters

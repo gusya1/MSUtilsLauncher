@@ -1,7 +1,7 @@
 import uuid
 
 from django.shortcuts import render
-from django.views.generic import FormView, TemplateView, View
+from django.views.generic import FormView, View
 
 
 from root.views import CacheMixin, ProcessView

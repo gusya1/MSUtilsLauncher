@@ -4,6 +4,9 @@ class SingletonModelMixin(models.Model):
     singleton_pk = 1
 
     class Meta:
+
+        """Мета-настройки модели."""
+
         abstract = True
 
     def save(self, *args, **kwargs):
@@ -16,4 +19,5 @@ class SingletonModelMixin(models.Model):
         return obj
     
     def __str__(self):
+        """Возвращает имя модели."""
         return self._meta.verbose_name.capitalize()

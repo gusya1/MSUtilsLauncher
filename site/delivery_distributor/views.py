@@ -2,8 +2,8 @@ import logging
 import datetime
 import uuid
 
-from django.shortcuts import redirect, render
-from django.urls import reverse, reverse_lazy
+from django.shortcuts import redirect
+from django.urls import reverse
 from django.views.generic import FormView, TemplateView, View
 from django.http import JsonResponse
 from django.core.cache import cache
@@ -11,7 +11,6 @@ from django.core.cache import cache
 from celery.result import AsyncResult
 
 from extra_views import FormSetView
-from numpy import add
 
 from moy_sklad_settings.models import MoySkladSettings
 from moy_sklad_settings.utils import get_moy_sklad_token
@@ -23,7 +22,13 @@ from moy_sklad.utils import format_moy_sklad_datetime
 from yandex_geocoder.geocoder import Geocoder
 from yandex_geocoder.models import Location
 
-from .core.solution_processor import export_courier_break_points, export_route_points, export_routes_lines_to_geojson, make_context, make_orders_courrier_load_data
+from .core.solution_processor import (
+    export_courier_break_points,
+    export_route_points,
+    export_routes_lines_to_geojson,
+    make_context,
+    make_orders_courrier_load_data,
+)
 from .core.time_intervals_identifier import parse_time_interval_safety
 from .core.data_structure import CourierData, OrderData, Point, RoutingSettingsData, RoutingTaskData
 from .tasks import solve_vrp_task
@@ -174,12 +179,22 @@ class IndexView(AppViewMixin, DeliveryRoutingCacheMixin, FormView):
     def _get_moy_sklad_orders(self, date):
         client = MoySkladClient(get_moy_sklad_token())
         settings = MoySkladSettings.get_solo()
-        project_filters = ["project!={}".format(project.meta.href) for project in self.__get_projects(client, settings.delivery_routing_project_blacklist)]
+        project_filters = [
+            "project!={}".format(project.meta.href)
+            for project in self.__get_projects(client, settings.delivery_routing_project_blacklist)
+        ]
         date_filter = "deliveryPlannedMoment={}".format(format_moy_sklad_datetime(date))
         filter = ";".join(project_filters + [date_filter])
-        return getters.walk_for_all(client, model.MoySkladCustomerOrderExpandedPositionsAssortment, filter=filter, limit=99, expand="positions.assortment")
+        return getters.walk_for_all(
+            client,
+            model.MoySkladCustomerOrderExpandedPositionsAssortment,
+            filter=filter,
+            limit=99,
+            expand="positions.assortment",
+        )
 
-    def _get_order_data(self, order: model.MoySkladCustomerOrderExpandedPositionsAssortment, geocoder: Geocoder, settings: MoySkladSettings):
+    def _get_order_data(self, order: model.MoySkladCustomerOrderExpandedPositionsAssortment,
+                        geocoder: Geocoder, settings: MoySkladSettings):
         delivery_time = order.find_attribute_by_name(settings.delivery_time_attribute_name)
         delivery_time = delivery_time.value if delivery_time else ""
         weight = sum(position.quantity * position.assortment.weight for position in order.positions.rows)
@@ -236,7 +251,11 @@ class OrderDetailsView(AppViewMixin, DeliveryRoutingCacheMixin, FormSetView):
       return data
     
     def formset_valid(self, formset):
-        new_data = list(OrderData.model_validate(data) for data in formset.cleaned_data if data and not data.get('DELETE', False))
+        new_data = [
+            OrderData.model_validate(data)
+            for data in formset.cleaned_data
+            if data and not data.get('DELETE', False)
+        ]
         self.set_orders(new_data)
 
         action = self.request.POST.get("action")
@@ -275,7 +294,11 @@ class CourierDetailsView(AppViewMixin, DeliveryRoutingCacheMixin, FormSetView):
         return data
 
     def formset_valid(self, formset):
-        new_data = list(self.__get_courier_by_form_data(data, formset[i]) for i, data in enumerate(formset.cleaned_data) if data and not data.get('DELETE', False))
+        new_data = [
+            self.__get_courier_by_form_data(data, formset[i])
+            for i, data in enumerate(formset.cleaned_data)
+            if data and not data.get('DELETE', False)
+        ]
         
         if not any(courier.enable for courier in new_data):
             formset._non_form_errors = "Нет активных курьеров"
@@ -297,13 +320,18 @@ class CourierDetailsView(AppViewMixin, DeliveryRoutingCacheMixin, FormSetView):
             courier = None
         if use_home_location and (courier is None or courier.home_location is None):
                 form.add_error("use_home_location", "Нельзя установить домашнюю локацию для этого курьера")
-        return CourierData(enable=data["enable"],
-                           name=data["name"],
-                           project=data["project"], 
-                           color=data["color"],
-                           start=make_point_by_location(settings.store_location), 
-                           end=make_point_by_location(courier.home_location) if use_home_location and courier else None,
-                           capacitiy=data["capacity"])
+        return CourierData(
+            enable=data["enable"],
+            name=data["name"],
+            project=data["project"],
+            color=data["color"],
+            start=make_point_by_location(settings.store_location),
+            end=(
+                make_point_by_location(courier.home_location)
+                if use_home_location and courier else None
+            ),
+            capacitiy=data["capacity"],
+        )
 
     def __get_couriers_by_settings(self):
         settings = DeliveryRoutingSettings.get_solo()
@@ -311,12 +339,17 @@ class CourierDetailsView(AppViewMixin, DeliveryRoutingCacheMixin, FormSetView):
         couriers = []
         for courier_settings in couriers_settings:
             courier_settings: Courier
-            couriers.append(CourierData(name=courier_settings.name,
-                                        project=courier_settings.project,
-                                        color=courier_settings.color, 
-                                        start=make_point_by_location(settings.store_location), 
-                                        end=make_point_by_location(courier_settings.home_location) if courier_settings.home_location else None,
-                                        capacitiy=courier_settings.capacity))
+            couriers.append(CourierData(
+                name=courier_settings.name,
+                project=courier_settings.project,
+                color=courier_settings.color,
+                start=make_point_by_location(settings.store_location),
+                end=(
+                    make_point_by_location(courier_settings.home_location)
+                    if courier_settings.home_location else None
+                ),
+                capacitiy=courier_settings.capacity,
+            ))
         return couriers
     
 

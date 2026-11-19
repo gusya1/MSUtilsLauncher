@@ -5,6 +5,9 @@ from colorful.fields import RGBColorField
 
 class DeliveryMapPaletteSettings(SingletonModelMixin, models.Model):
     class Meta:
+
+        """Мета-настройки модели."""
+
         verbose_name = "Настройки палитры для выгрузки карты доставки"
         verbose_name_plural = "Настройки палитры для выгрузки карты доставки"
 
@@ -47,8 +50,12 @@ class PaletteItem(models.Model):
     )
 
     class Meta:
-        unique_together = ['config', 'color', 'project'] 
-        ordering = ['color'] 
+
+        """Мета-настройки модели."""
+
+        unique_together = ['config', 'color', 'project']
+        ordering = ['color']
 
     def __str__(self):
+        """Возвращает цвет и проект."""
         return f"{self.color}: {self.project}"

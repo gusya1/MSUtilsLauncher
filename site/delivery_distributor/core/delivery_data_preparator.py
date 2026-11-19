@@ -1,16 +1,13 @@
 import datetime
 import logging
-import json
 
 from .data_structure import CourierData, OrderData, Point, RoutingData, RoutingSettingsData
-from .osrm_client import compute_distance_matrix, compute_matrices, compute_time_matrix
+from .osrm_client import compute_matrices
 
 logger = logging.getLogger("delivery_distributor")
 
 def prepare_points(orders: list[OrderData], couriers: list[CourierData]) -> list[Point]:
-    """
-    Собирает все точки: сначала заказы, затем старты, затем финиши.
-    """
+    """Собирает все точки: сначала заказы, затем старты, затем финиши."""
     points = []
     for order in orders:
         points.append(order.point)
@@ -28,18 +25,14 @@ def prepare_points(orders: list[OrderData], couriers: list[CourierData]) -> list
 
 
 def duration_from_day_start(time: datetime.time) -> int:
-    """
-    Вычисляет время в секундах от начала дня до заданного времени.
-    """
+    """Вычисляет время в секундах от начала дня до заданного времени."""
     return int(time.hour * 3600 + time.minute * 60 + time.second)
 
 def end_of_day() -> int:
     return duration_from_day_start(datetime.time.max)
 
 def get_order_time_windows(orders: list[OrderData]) -> list[tuple[int, int]]:
-    """
-    Вычисляет временные окна для заказов.
-    """
+    """Вычисляет временные окна для заказов."""
     return [(duration_from_day_start(order.start_time), duration_from_day_start(order.end_time)) for order in orders]
 
 def get_order_demands(orders):
@@ -71,7 +64,11 @@ def create_data_model(orders: list[OrderData], couriers: list[CourierData], sett
     time_windows = get_order_time_windows(orders)
     
     # Время обслуживания заказов.
-    service_times = ([settings.order_service_time_sec] * n_orders) + ([settings.start_service_time_sec] * n_couriers) + ([0] * n_couriers)
+    service_times = (
+        [settings.order_service_time_sec] * n_orders
+        + [settings.start_service_time_sec] * n_couriers
+        + [0] * n_couriers
+    )
 
     
     # вместимость курьеров

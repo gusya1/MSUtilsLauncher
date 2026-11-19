@@ -11,8 +11,9 @@ logger = logging.getLogger("delivery_distributor")
 
 def compute_matrices(points: list[Point]) -> list[list[float]]:
     """
-    Вычисляет матрицу времени в секундах для списка точек,
-    используя OSRM (http://localhost:5000).
+    Вычисляет матрицу времени в секундах для списка точек.
+
+    Использует OSRM (http://localhost:5000).
     """
     coords = ";".join(f"{p.longitude},{p.latitude}" for p in points)
     url = f"{settings.OSRM_URL}/table/v1/driving/{coords}?annotations=distance,duration"
@@ -38,8 +39,9 @@ def compute_matrices(points: list[Point]) -> list[list[float]]:
 
 def compute_time_matrix(points: list[Point]) -> list[list[float]]:
     """
-    Вычисляет матрицу времени в секундах для списка точек,
-    используя OSRM (http://localhost:5000).
+    Вычисляет матрицу времени в секундах для списка точек.
+
+    Использует OSRM (http://localhost:5000).
     """
     coords = ";".join(f"{p.longitude},{p.latitude}" for p in points)
     url = f"{settings.OSRM_URL}/table/v1/driving/{coords}"
@@ -62,8 +64,9 @@ def compute_time_matrix(points: list[Point]) -> list[list[float]]:
 
 def compute_distance_matrix(points: list[Point]) -> list[list[float]]:
     """
-    Вычисляет матрицу времени в секундах для списка точек,
-    используя OSRM (http://localhost:5000).
+    Вычисляет матрицу времени в секундах для списка точек.
+
+    Использует OSRM (http://localhost:5000).
     """
     coords = ";".join(f"{p.longitude},{p.latitude}" for p in points)
     url = f"{settings.OSRM_URL}/table/v1/driving/{coords}?annotations=distance"

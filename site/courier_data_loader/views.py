@@ -1,11 +1,10 @@
 import json
-import logging
 from urllib.parse import urlencode
 import uuid
 from django.shortcuts import redirect
 from pydantic import ValidationError
 
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse
 from django.core.cache import cache
 from django.http import JsonResponse
 from django.views.generic import TemplateView, View

@@ -16,7 +16,9 @@ def strong_time_interval(string):
     if result is None:
         return None
     try:
-        return datetime.time(int(result.group(2)), int(result.group(4) or 0)), datetime.time(int(result.group(6)), int(result.group(8) or 0)) 
+        start = datetime.time(int(result.group(2)), int(result.group(4) or 0))
+        end = datetime.time(int(result.group(6)), int(result.group(8) or 0))
+        return start, end
     except ValueError:
         return None
 
@@ -25,7 +27,10 @@ def strong_time_interval(string):
 #  до 14:00
 def humanable_time_interval(string):
     try:
-        result = re.search(r"[сС]\s+((\d\d?)([:.](\d\d?))?)", string) or re.search(r"[пП][оО][сС][лЛ][еЕ]\s+((\d\d?)([:.](\d\d?))?)", string)
+        result = (
+            re.search(r"[сС]\s+((\d\d?)([:.](\d\d?))?)", string)
+            or re.search(r"[пП][оО][сС][лЛ][еЕ]\s+((\d\d?)([:.](\d\d?))?)", string)
+        )
         start = None
         if result is not None:
             start = datetime.time(int(result.group(2)), int(result.group(4) or 0))

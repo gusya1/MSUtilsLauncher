@@ -8,6 +8,9 @@ class PaymentInCreatorSettings(SingletonModelMixin, models.Model):
     paymentin_state = models.CharField(max_length=255, blank=True, verbose_name="Статус создаваемого входящего платежа")
 
     class Meta:
+
+        """Мета-настройки модели."""
+
         verbose_name = "Настройки создания входящих платежей"
         verbose_name_plural = "Настройки создания входящих платежей"
 

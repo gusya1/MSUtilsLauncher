@@ -1,11 +1,9 @@
 
 import logging
-import re
 
 from django import forms
 from django.forms import ModelForm
 
-from colorful.fields import RGBColorField
 
 from yandex_geocoder.geocoder import Geocoder
 from yandex_geocoder.models import Location
@@ -74,6 +72,9 @@ class CourierForm(forms.Form):
 
 class DeliveryRoutingSettingsForm(ModelForm):
     class Meta:
+
+        """Мета-настройки формы."""
+
         model = DeliveryRoutingSettings
         fields="__all__"
         exclude = ['store_location']

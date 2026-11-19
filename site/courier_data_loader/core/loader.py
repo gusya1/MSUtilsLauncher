@@ -1,9 +1,7 @@
 
 
-from dataclasses import dataclass
 import uuid
 
-from pydantic import BaseModel
 
 from moy_sklad.client import MoySkladClient
 from moy_sklad import getters, model, updaters
@@ -16,7 +14,10 @@ from .data_structure import OrderCourierData, OrdersCourierData, ResultData
 
 
 def find_customer_order_attribute_by_name(client: MoySkladClient, attribute_name):
-    attributes = list(attr for attr in getters.get_attibutes_for_entity(client, model.MoySkladCustomerOrder) if attr.name == attribute_name)
+    attributes = list(
+        attr for attr in getters.get_attibutes_for_entity(client, model.MoySkladCustomerOrder)
+        if attr.name == attribute_name
+    )
     if len(attributes) > 1:
         raise RuntimeError("Неоднозначное имя аттрибута: {}".format(attribute_name))
     if len(attributes) < 1:
@@ -85,14 +86,20 @@ def load_courier_data(orders_courier_data: OrdersCourierData) -> ResultData:
 
     try:
         delivery_order_attribute_name = MoySkladSettings.get_solo().delivery_order_attribute_name
-        delivery_order_attribute: model.MoySkladAttributeInfo = find_customer_order_attribute_by_name(client, delivery_order_attribute_name)
+        delivery_order_attribute: model.MoySkladAttributeInfo = (
+            find_customer_order_attribute_by_name(client, delivery_order_attribute_name)
+        )
 
 
 
         for data in orders_courier_data.orders:
             try:
                 process_courier_data(client, delivery_order_attribute, data)
-                change_list.append("Заказ {} обработан. Проект: '{}', {}: '{}'".format(data.order_name, data.project, delivery_order_attribute_name, data.delivery_order_number))
+                change_list.append(
+                    "Заказ {} обработан. Проект: '{}', {}: '{}'".format(
+                        data.order_name, data.project, delivery_order_attribute_name, data.delivery_order_number
+                    )
+                )
             except RuntimeError as e:
                 error_list.append("Ошибка обработки заказа {}: {}".format(data.order_name, str(e)))
     except (MoySkladError, RuntimeError) as e:

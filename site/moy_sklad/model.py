@@ -1,9 +1,8 @@
 import enum
-from typing import Annotated, Any, TypeVar
 from datetime import datetime, timezone, timedelta
 from uuid import UUID
 
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 
 from pydantic import BaseModel
 from pydantic_core import core_schema
@@ -12,10 +11,12 @@ from pydantic_core import core_schema
 MOSCOW_TZ = timezone(timedelta(hours=3))
 
 class MoscowDateTime(datetime):
-    """Минимальная версия с вашим форматом"""
-    
+
+    """Минимальная версия с вашим форматом."""
+
     @classmethod
     def __get_pydantic_core_schema__(cls, *args) -> core_schema.CoreSchema:
+        """Возвращает pydantic-схему валидации и сериализации даты."""
         return core_schema.with_info_plain_validator_function(
             cls.validate,
             serialization=core_schema.plain_serializer_function_ser_schema(
@@ -35,7 +36,7 @@ class MoscowDateTime(datetime):
         elif isinstance(value, datetime):
             dt = value
         else:
-            raise ValueError(f"Ожидается строка или datetime")
+            raise ValueError("Ожидается строка или datetime")
         
         # Устанавливаем московскую таймзону
         if dt.tzinfo is None:
@@ -58,6 +59,7 @@ class MoscowDateTime(datetime):
 class Kopeck:
     @classmethod
     def __get_pydantic_core_schema__(cls, *args) -> core_schema.CoreSchema:
+        """Возвращает pydantic-схему валидации и сериализации цены."""
         return core_schema.with_info_plain_validator_function(
             cls.validate,
             serialization=core_schema.plain_serializer_function_ser_schema(
@@ -77,7 +79,7 @@ class Kopeck:
 
     @classmethod
     def serialize(cls, value: "Kopeck") -> int:
-        """Сериализация: рубли -> копейки"""
+        """Сериализация: рубли -> копейки."""
         # Умножаем на 100 и округляем до целого
         return float(value.to_kopeck())
     
@@ -99,15 +101,18 @@ class Kopeck:
         return self.value / 100
     
     def __eq__(self, value: object) -> bool:
+        """Сравнивает с другим значением Kopeck."""
         if isinstance(value, Kopeck):
             return value.value == self.value
         raise ValueError("Kopeck.__eq__ expected Kopeck value")
-    
+
 class DiscountFactor(Decimal):
-    """Процент скидки"""
+
+    """Процент скидки."""
 
     @classmethod
     def __get_pydantic_core_schema__(cls, *args) -> core_schema.CoreSchema:
+        """Возвращает pydantic-схему валидации и сериализации процента."""
         return core_schema.with_info_plain_validator_function(
             cls.validate,
             serialization=core_schema.plain_serializer_function_ser_schema(

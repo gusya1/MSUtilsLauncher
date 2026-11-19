@@ -9,9 +9,7 @@ from .delivery_data_preparator import prepare_points
 logger = logging.getLogger("delivery_distributor")
 
 def seconds_to_time(seconds: int) -> datetime.time:
-    """
-    Преобразует количество секунд от начала дня в объект datetime.time.
-    """
+    """Преобразует количество секунд от начала дня в объект datetime.time."""
     seconds %= 86400  # опционально, чтобы корректно обрабатывать значения >= 86400
     midnight = datetime.datetime.combine(datetime.date.min, datetime.time.min)
     result_time = midnight + datetime.timedelta(seconds=seconds)
@@ -125,6 +123,7 @@ def export_routes_lines_to_geojson(
 ) -> dict[str, object]:
     """
     Преобразует маршруты в GeoJSON FeatureCollection.
+
     Возвращает словарь, который можно сохранить как JSON.
     """
     # Соберём все точки для доступа по индексам

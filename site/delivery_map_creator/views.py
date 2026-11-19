@@ -2,7 +2,6 @@ from django.http import HttpResponse, HttpResponseNotFound
 from django.contrib.auth.decorators import permission_required
 from django.shortcuts import render
 from django.views.generic import FormView
-from django.urls import reverse, reverse_lazy
 
 
 from .AutocleanStorage import autoclean_default_storage

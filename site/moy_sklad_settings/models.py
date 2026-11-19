@@ -26,6 +26,9 @@ class MoySkladSettings(SingletonModelMixin, models.Model):
         )
 
     class Meta:
+
+        """Мета-настройки модели."""
+
         verbose_name = "Настройки Мой Склад"
         verbose_name_plural = "Настройки Мой Склад"
 
@@ -39,8 +42,12 @@ class BlacklistProjectMS(models.Model):
     value = models.CharField(max_length=255)
 
     def __str__(self):
+        """Возвращает значение проекта."""
         return self.value
 
     class Meta:
+
+        """Мета-настройки модели."""
+
         verbose_name = "Проект МС"
         verbose_name_plural = "Черный список проектов для маршрутизации курьеров"

@@ -39,12 +39,16 @@ def add_time_dimension(routing, manager, data: RoutingData, settings: RoutingSet
         if window_start is not None and window_end is not None:
             index = manager.NodeToIndex(node_idx)
             assert(index >= 0)
-            time_dimension.CumulVar(index).SetRange(window_start - settings.max_late_sec, window_end + settings.max_late_sec)
-            time_dimension.SetCumulVarSoftUpperBound(index, window_end, settings.late_penalty) # штраф за опаздание
-            time_dimension.SetCumulVarSoftLowerBound(index, window_start, settings.late_penalty)  # штраф за ранний приезд
+            time_dimension.CumulVar(index).SetRange(
+                window_start - settings.max_late_sec,
+                window_end + settings.max_late_sec
+            )
+            time_dimension.SetCumulVarSoftUpperBound(index, window_end, settings.late_penalty)  # штраф за опаздание
+            time_dimension.SetCumulVarSoftLowerBound(
+                index, window_start, settings.late_penalty
+            )  # штраф за ранний приезд
 
     for vehicle_id in range(data.num_vehicles):
-        start_index = routing.Start(vehicle_id)
         end_index = routing.End(vehicle_id)
 
         start, end = settings.start_work_time_sec, settings.end_work_time_sec
