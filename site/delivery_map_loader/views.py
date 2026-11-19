@@ -1,14 +1,9 @@
-import logging
-from typing import Tuple
-
-from django.contrib.auth.decorators import permission_required
 from django.shortcuts import render
 from django.views.generic import FormView
 
 from .apps import DeliveryMapLoaderConfig as App
 from .forms import GeoJsonFileChooseForm
 from .run import delivery_map_loader
-from .run.projects import get_project_names
 
 class AppViewMixin:
     subtitle= ""

@@ -3,7 +3,7 @@
 class MoySkladError(Exception):
     pass
 
-class MoySkladConnectionError(Exception):
+class MoySkladConnectionError(MoySkladError):
     pass
 
 class MoySkladRateLimitError(MoySkladError):

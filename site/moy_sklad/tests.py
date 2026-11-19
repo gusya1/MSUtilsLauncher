@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from . import client as client_module
 from .client import MoySkladClient, RATE_LIMIT_MAX_RETRIES, retry_delay_seconds
-from .exceptions import MoySkladError, MoySkladRateLimitError
+from .exceptions import MoySkladConnectionError, MoySkladError, MoySkladRateLimitError
 
 
 def make_response(status_code: int = 200, headers=None):
@@ -282,3 +282,6 @@ class RateLimitErrorContractTests(unittest.TestCase):
 
     def test_rate_limit_error_is_moy_sklad_error(self):
         self.assertTrue(issubclass(MoySkladRateLimitError, MoySkladError))
+
+    def test_connection_error_is_moy_sklad_error(self):
+        self.assertTrue(issubclass(MoySkladConnectionError, MoySkladError))

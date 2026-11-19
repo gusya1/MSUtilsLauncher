@@ -1,9 +1,10 @@
-from MSApi import Project, CustomerOrder, MSApi, \
-    error_handler, MSApiException, MSApiHttpException
-from MSApi import Filter
+from datetime import timedelta
 
+from moy_sklad.client import MoySkladClient
+from moy_sklad import getters, model, updaters
+from moy_sklad.exceptions import MoySkladError
+from moy_sklad.utils import format_moy_sklad_datetime, make_entity_meta_filed
 from moy_sklad_settings.models import MoySkladSettings
-from moy_sklad_utils import filters
 from moy_sklad_settings.utils import get_moy_sklad_token
 
 from map_constructor_model.feature_collection import FeatureCollection
@@ -12,16 +13,22 @@ from map_constructor_model.properties import MapConstructorPointProperties
 
 from delivery_map_loader.models import DeliveryMapPaletteSettings
 
-def update_customer_order(order_id, updated_data):
+
+def _get_one_day_filter(parameter, date):
+    next_date = date + timedelta(days=1)
+    return "{}>={};{}<{}".format(parameter, format_moy_sklad_datetime(date), parameter,
+                                 format_moy_sklad_datetime(next_date))
+
+
+def update_customer_order(client: MoySkladClient, customer_order: model.MoySkladCustomerOrder, updated_data):
     try:
-        response = MSApi.auch_put("entity/{}/{}".format(CustomerOrder.get_typename(), order_id), json=updated_data)
-        error_handler(response)
-    except MSApiException as e:
-        raise RuntimeError("Заказ {}: Ошибка МойСклад: {}".format(order_id, str(e)))
+        updaters.update_entity(client, customer_order.id, updated_data)
+    except MoySkladError as e:
+        raise RuntimeError("Заказ {}: Ошибка МойСклад: {}".format(customer_order.name, str(e)))
 
 
-def find_project_by_name(project_name):
-    projects = list(Project.gen_list(filters=Filter.eq("name", project_name)))
+def find_project_by_name(client: MoySkladClient, project_name):
+    projects = list(getters.walk_for_all(client, model.MoySkladProject, filter="name={}".format(project_name)))
     if len(projects) > 1:
         raise RuntimeError("Неоднозначное имя проекта: {}".format(project_name))
     if len(projects) < 1:
@@ -29,10 +36,9 @@ def find_project_by_name(project_name):
     return projects[0]
 
 
-def find_customer_order_by_name(order_id, additional_filters=None):
-    name_filter = Filter.eq("name", order_id)
-    customer_order_filters = name_filter + additional_filters if additional_filters else name_filter
-    customer_orders = list(CustomerOrder.gen_list(filters=customer_order_filters))
+def find_customer_order_by_name(client: MoySkladClient, order_id, date_filter):
+    customer_orders = list(getters.walk_for_all(
+        client, model.MoySkladCustomerOrder, filter="name={};{}".format(order_id, date_filter)))
     if len(customer_orders) > 1:
         raise RuntimeError("Неоднозначный номер заказа: {}".format(order_id))
     if len(customer_orders) < 1:
@@ -40,8 +46,11 @@ def find_customer_order_by_name(order_id, additional_filters=None):
     return customer_orders[0]
 
 
-def find_customer_order_attribute_by_name(attribute_name):
-    attributes = list(filter(lambda attr: attr.get_name() == attribute_name, CustomerOrder.gen_attributes_list()))
+def find_customer_order_attribute_by_name(client: MoySkladClient, attribute_name):
+    attributes = [
+        attr for attr in getters.get_attibutes_for_entity(client, model.MoySkladCustomerOrder)
+        if attr.name == attribute_name
+    ]
     if len(attributes) > 1:
         raise RuntimeError("Неоднозначное имя аттрибута: {}".format(attribute_name))
     if len(attributes) < 1:
@@ -49,16 +58,16 @@ def find_customer_order_attribute_by_name(attribute_name):
     return attributes[0]
 
 
-def check_customer_order_project(customer_order: CustomerOrder):
-    if customer_order.get_project() is not None:
-        raise RuntimeError("Заказ {}: Проект уже заполнен".format(customer_order.get_name()))
+def check_customer_order_project(customer_order: model.MoySkladCustomerOrder):
+    if customer_order.project is not None:
+        raise RuntimeError("Заказ {}: Проект уже заполнен".format(customer_order.name))
 
 
-def get_project_by_color(projects_by_color, color) -> Project:
+def get_project_by_color(client, projects_by_color, color) -> model.MoySkladProject:
     project_name = projects_by_color.get(color, None)
     if project_name is None:
         raise RuntimeError("Цвет {} не определён".format(color))
-    return find_project_by_name(project_name)
+    return find_project_by_name(client, project_name)
 
 
 def get_properties(feature: Feature) -> MapConstructorPointProperties:
@@ -73,54 +82,43 @@ def run(geojson_data, date):
     error_list = []
     change_list = []
     try:
-        MSApi.set_access_token(get_moy_sklad_token())
+        client = MoySkladClient(get_moy_sklad_token())
 
         settings_model = DeliveryMapPaletteSettings.get_solo()
         projects_by_color = {item.color: item.project for item in settings_model.project_by_color.all()}
         ms_settings = MoySkladSettings.get_solo()
         delivery_order_attribute_name = ms_settings.delivery_order_attribute_name
 
-        date_filter = filters.get_one_day_filter('deliveryPlannedMoment', date)
-        delivery_order_attribute = find_customer_order_attribute_by_name(delivery_order_attribute_name)
+        date_filter = _get_one_day_filter('deliveryPlannedMoment', date)
+        delivery_order_attribute = find_customer_order_attribute_by_name(client, delivery_order_attribute_name)
 
         collection = FeatureCollection.model_validate_json(geojson_data)
         for feature in collection.features:
             try:
                 properties = get_properties(feature)
                 order_id = get_order_id_from_icon_caption(properties.iconCaption)
-                project = get_project_by_color(projects_by_color, properties.marker_color)
+                project = get_project_by_color(client, projects_by_color, properties.marker_color)
                 delivery_order_number = int(properties.iconContent)
-                customer_order = find_customer_order_by_name(order_id, date_filter)
+                customer_order = find_customer_order_by_name(client, order_id, date_filter)
 
                 check_customer_order_project(customer_order)
 
-                updated_data = {
-                    "project": {
-                        "meta": project.get_meta().get_json()
-                    },
-                    "attributes": [
-                        {
-                            "meta": delivery_order_attribute.get_meta().get_json(),
-                            "value": delivery_order_number
-                        }
-                    ]
-                }
+                updated_data = model.MoySkladCustomerOrderUpdate(
+                    project=make_entity_meta_filed(project),
+                    attributes=[
+                        model.MoySkladAttributeCreate(meta=delivery_order_attribute.meta, value=delivery_order_number)
+                    ],
+                )
 
-                update_customer_order(customer_order.get_id(), updated_data)
-                change_list.append("Заказ {}: проект - '{}', {} - {}".format(order_id, project.get_name(),
-                                                                             delivery_order_attribute_name,
-                                                                             delivery_order_number))
+                update_customer_order(client, customer_order, updated_data)
+                change_list.append("Заказ {}: проект - '{}', {} - {}".format(order_id, project.name,
+                                                                              delivery_order_attribute_name,
+                                                                              delivery_order_number))
             except RuntimeError as e:
                 error_list.append(str(e))
 
-    except MSApiHttpException as e:
+    except MoySkladError as e:
         error_list.append("Ошибка МойСклад: {}".format(str(e)))
-        return False, change_list, error_list
-    except MSApiException as e:
-        error_list.append("Внутрянняя ошибка: {}".format(str(e)))
-        return False, change_list, error_list
-    except FileNotFoundError as e:
-        error_list.append("Внутрянняя ошибка: {}".format(str(e)))
         return False, change_list, error_list
 
     return True, change_list, error_list
